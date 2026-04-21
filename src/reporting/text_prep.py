@@ -68,6 +68,8 @@ def load_stopwords_vi() -> Set[str]:
         "vn",
         "việt",
         "nam",
+        "việc",
+        "thông",
         # mảnh HTML entity hay gặp khi RSS bị escape
         "amp",
         "quot",

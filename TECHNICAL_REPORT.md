@@ -47,6 +47,7 @@ Script: `scripts/generate_weekly_report.py`
 - Lọc chỉ giữ cụm từ "có nghĩa":
   - tối thiểu 3 từ
   - ưu tiên cụm có tín hiệu công nghệ (AI/IPv6/5G/iOS/iPhone/robot/an ninh mạng/chuyển đổi số...)
+  - loại cụm bị cắt cụt/không tự nhiên (ví dụ bắt đầu bằng "thực", "việc")
 
 #### 3) Chọn Highlighted News (sự kiện nổi bật)
 
@@ -97,14 +98,16 @@ Các chủ đề nổi bật xoay quanh: **robot hình người, xác thực sim
 - **sim chính chủ**
 - **sản phẩm apple**
 - **chuyển đổi số**
-- **sai lầm phổ**
 - **sai lầm phổ biến**
-- **việc triển khai**
-- **iphone pro lộ**
 - **iphone pro lộ diện**
 - **an ninh mạng**
-- **màu sắc iphone**
 - **màu sắc iphone pro**
+- **xác nhận sim chính**
+- **dùng iphone trung thành**
+- **marathon robot hình**
+- **chính chủ vneid**
+- **sai quỹ đạo tên lửa**
+- **vệ tinh sai**
 
 ### Highlighted News
 

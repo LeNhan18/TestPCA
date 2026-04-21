@@ -99,7 +99,11 @@ def trending_keywords_tfidf(
     X = vec.fit_transform(corpus)
     scores = X.sum(axis=0).A1
     terms = vec.get_feature_names_out()
-    ranked = sorted(zip(terms, scores), key=lambda x: x[1], reverse=True)
+    ranked = sorted(
+        zip(terms, scores),
+        key=lambda x: (x[1], len(x[0].split())),  # prefer higher score, then longer phrase
+        reverse=True,
+    )
 
     TECH_HINTS = {
         "ai",
@@ -145,6 +149,11 @@ def trending_keywords_tfidf(
         if len(parts) < 3:
             return False
 
+        # loại các cụm bị cắt cụt/không tự nhiên
+        bad_prefixes = {"thực", "việc"}
+        if parts[0].lower() in bad_prefixes:
+            return False
+
         t = term.lower()
         # Ưu tiên cụm có "tín hiệu" công nghệ/policy
         for hint in TECH_HINTS:
@@ -157,11 +166,38 @@ def trending_keywords_tfidf(
 
         return False
 
-    # chỉ giữ cụm từ có ý nghĩa theo rule trên
+    def normalize_phrase(term: str) -> str:
+        # normalize đơn giản để dedupe (xóa khoảng trắng thừa)
+        return " ".join(term.lower().split())
+
+    def token_jaccard(a: str, b: str) -> float:
+        sa = set(a.split())
+        sb = set(b.split())
+        if not sa or not sb:
+            return 0.0
+        return len(sa & sb) / len(sa | sb)
+
+    def is_redundant(term: str, chosen: List[str]) -> bool:
+        t = normalize_phrase(term)
+        for c in chosen:
+            c_norm = normalize_phrase(c)
+            # substring/prefix redundancy
+            if t in c_norm or c_norm in t:
+                return True
+            # near-duplicate by token overlap
+            if token_jaccard(t, c_norm) >= 0.8:
+                return True
+        return False
+
+    # chỉ giữ cụm từ có ý nghĩa, và loại cụm lặp/na ná nhau
+    filtered_terms: List[str] = []
     filtered: List[Tuple[str, float]] = []
     for term, score in ranked:
         if not is_meaningful_phrase(term):
             continue
+        if is_redundant(term, filtered_terms):
+            continue
+        filtered_terms.append(term)
         filtered.append((term, float(score)))
         if len(filtered) >= top_k:
             break
