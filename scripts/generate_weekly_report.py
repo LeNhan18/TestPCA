@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
+import re
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -105,43 +106,84 @@ def trending_keywords_tfidf(
         reverse=True,
     )
 
+    # Nhóm tín hiệu "công nghệ" để hạn chế keyword noise
     TECH_HINTS = {
+        # AI
         "ai",
         "gemini",
         "chatbot",
+        "claude",
+        "llm",
+        # web/browser
         "chrome",
+        # mobile/os
         "android",
         "ios",
         "iphone",
         "ipad",
         "mac",
+        "samsung",
+        "galaxy",
+        # companies
         "apple",
         "google",
         "meta",
         "microsoft",
         "defender",
+        # telecom / id
         "ipv6",
         "5g",
         "sim",
         "vneid",
+        "định danh",
+        "thuê bao",
         "an ninh mạng",
         "tấn công mạng",
         "mã độc",
         "bảo mật",
+        "lỗ hổng",
         "chuyển đổi số",
         "định danh số",
         "dữ liệu số",
+        # robotics
         "robot",
         "drone",
+        # computing
+        "máy tính",
         "lượng tử",
         "quantum",
-        "mRNA".lower(),
+        # health-tech
+        "mrna",
         "vaccine",
         "ung thư",
+        # general tech
         "internet",
         "thiết bị",
         "phần mềm",
     }
+
+    NOISE_TOKENS = {
+        # các cụm dễ kéo sai domain/không phải "keyword chủ đề"
+        "marathon",
+        "quỹ đạo",
+        "tên lửa",
+        "vệ tinh",
+        "audition",
+        "esports",
+    }
+
+    SHORT_OK = {"ai", "ios", "5g", "sim", "ipv6", "mrna"}
+
+    def looks_truncated(term: str) -> bool:
+        parts = term.split()
+        for p in parts:
+            pl = p.lower()
+            if pl in SHORT_OK:
+                continue
+            # token quá ngắn thường là cụt (vd "di", "lo", "ve"...)
+            if len(pl) < 3 and not any(ch.isdigit() for ch in pl):
+                return True
+        return False
 
     def is_meaningful_phrase(term: str) -> bool:
         parts = term.split()
@@ -155,6 +197,10 @@ def trending_keywords_tfidf(
             return False
 
         t = term.lower()
+        if looks_truncated(term):
+            return False
+        if any(tok in t for tok in NOISE_TOKENS):
+            return False
         # Ưu tiên cụm có "tín hiệu" công nghệ/policy
         for hint in TECH_HINTS:
             if hint in t:
@@ -202,6 +248,58 @@ def trending_keywords_tfidf(
         if len(filtered) >= top_k:
             break
     return filtered
+
+
+def looks_like_noise_topic(text: str) -> bool:
+    t = text.lower()
+    return any(
+        k in t
+        for k in [
+            "audition",
+            "esports",
+            "marathon",
+            "tên lửa",
+            "quỹ đạo",
+            "vệ tinh",
+            "blue origin",
+        ]
+    )
+
+
+def highlight_category(text: str) -> str:
+    t = text.lower()
+    tokens = set(re.findall(r"[0-9A-Za-zÀ-ỹ]+", t))
+
+    def has_word(w: str) -> bool:
+        return w in tokens
+
+    if any(has_word(k) for k in ["ai", "gemini", "chatbot", "llm", "claude"]):
+        return "AI"
+    if any(
+        k in t
+        for k in [
+            "apple",
+            "iphone",
+            "ios",
+            "ipad",
+            "mac",
+            "galaxy",
+            "samsung",
+            "thiết bị",
+        ]
+    ):
+        return "Apple & thiết bị"
+    if any(
+        k in t
+        for k in ["an ninh mạng", "mã độc", "bảo mật", "hacker", "lỗ hổng", "defender"]
+    ):
+        return "An ninh mạng"
+    if any(
+        k in t
+        for k in ["chuyển đổi số", "định danh", "vneid", "dữ liệu số", "thuê bao", "sim"]
+    ):
+        return "Chuyển đổi số / Định danh"
+    return "Khác"
 
 
 @dataclass
@@ -337,12 +435,27 @@ def write_markdown_report(
     lines.append("")
 
     lines.append("### Highlighted News\n")
-    for i, (title, summary, links) in enumerate(highlights, start=1):
-        lines.append(f"{i}. **{title}**")
-        lines.append(f"   - {summary}")
-        for u in links:
-            lines.append(f"   - Link: {u}")
-        lines.append("")
+    grouped: Dict[str, List[Tuple[str, str, List[str]]]] = {
+        "AI": [],
+        "Apple & thiết bị": [],
+        "An ninh mạng": [],
+        "Chuyển đổi số / Định danh": [],
+        "Khác": [],
+    }
+    for title, summary, links in highlights:
+        grouped[highlight_category(f"{title}\n{summary}")].append((title, summary, links))
+
+    for section in ["AI", "Apple & thiết bị", "An ninh mạng", "Chuyển đổi số / Định danh", "Khác"]:
+        items = grouped.get(section) or []
+        if not items:
+            continue
+        lines.append(f"#### {section}\n")
+        for i, (title, summary, links) in enumerate(items, start=1):
+            lines.append(f"{i}. **{title}**")
+            lines.append(f"   - {summary}")
+            for u in links:
+                lines.append(f"   - Link: {u}")
+            lines.append("")
 
     out_path.write_text("\n".join(lines).strip() + "\n", encoding="utf-8")
 
@@ -359,6 +472,9 @@ def main() -> None:
     clusters = cluster_articles(corpus, articles, threshold=args.cluster_threshold)
     top_clusters = clusters[: args.top_events]
     highlights = [format_highlight(c, articles) for c in top_clusters]
+    highlights = [
+        h for h in highlights if not looks_like_noise_topic(f"{h[0]}\n{h[1]}")
+    ]
 
     out_path = (
         Path(args.out)

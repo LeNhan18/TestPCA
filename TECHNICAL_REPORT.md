@@ -64,6 +64,7 @@ Script: `scripts/generate_weekly_report.py`
   - tiêu đề đại diện = bài mới nhất trong cụm
   - tóm tắt ngắn = snippet bài đại diện
   - kèm 1–3 link nguồn
+ - Nhóm hiển thị theo chủ đề (rule-based): AI / Apple & thiết bị / An ninh mạng / Chuyển đổi số / Khác
 
 #### 4) Sinh Weekly Summary Report
 
