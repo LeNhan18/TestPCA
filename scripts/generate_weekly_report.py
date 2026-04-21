@@ -6,7 +6,7 @@ from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 import re
 
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -17,6 +17,85 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from src.reporting.text_prep import basic_vi_tokenize, join_tokens, load_stopwords_vi
 from src.llm.openai_compat import chat_completions_min_tokens
+
+
+HIGHLIGHT_SECTIONS = [
+    "AI",
+    "Apple & thiết bị",
+    "An ninh mạng",
+    "Chuyển đổi số / Định danh",
+    "Khác",
+]
+
+NOISE_HIGHLIGHT_TOKENS = [
+    "audition",
+    "esports",
+    "marathon",
+    "tên lửa",
+    "quỹ đạo",
+    "vệ tinh",
+    "blue origin",
+    "bitcoin",
+    "btc",
+]
+
+BAD_KEYWORD_LAST_TOKENS = {"tự", "tích", "ứng", "hợp", "bổ", "nhằm", "dụng", "chính"}
+
+# Các cụm quá chung, không nên xuất hiện như keyword độc lập
+GENERIC_BAD_KEYWORDS = {
+    "sử dụng",
+    "hoạt động",
+    "thành công",
+    "trở thành",
+    "nhiều người",
+    "người dùng",
+    "triển khai",
+    "thuê bao",
+    "hình người",
+}
+
+# Keyword phải chứa "tín hiệu công nghệ" mạnh (để giống headline trend hơn)
+STRONG_SIGNALS = {
+    "gemini",
+    "chatbot",
+    "chrome",
+    "iphone",
+    "ios",
+    "apple",
+    "galaxy",
+    "samsung",
+    "sim",
+    "vneid",
+    "an ninh mạng",
+    "bảo mật",
+    "mã độc",
+    "lỗ hổng",
+    "defender",
+    "microsoft",
+    "robot",
+    "hình người",
+    "google maps",
+    "google photos",
+    "ipv6",
+    "5g",
+}
+
+# Nếu keyword chỉ xuất hiện 1 bài, chỉ giữ nếu cực "đậm tech"
+VERY_STRONG_SINGLETONS = {
+    "gemini",
+    "chatbot gemini",
+    "microsoft defender",
+    "google photos",
+    "google maps",
+    "ios 27",
+    "iphone 17",
+    "iphone 17 pro",
+    "iphone 17 pro max",
+    "galaxy s26",
+    "galaxy s26 ultra",
+    "one ui",
+    "one ui 8.5",
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -102,6 +181,10 @@ def build_title_corpus(articles: Sequence[Dict[str, Any]]) -> List[str]:
     return corpus
 
 
+def _contains_any(haystack: str, needles: Sequence[str]) -> bool:
+    return any(n in haystack for n in needles)
+
+
 def trending_phrases_clustered(
     corpus: Sequence[str],
     *,
@@ -121,112 +204,19 @@ def trending_phrases_clustered(
     X = vec.fit_transform(corpus)
     terms = vec.get_feature_names_out()
 
-    # tf-idf sum score
+    # TF-IDF sum score
     tfidf_sum = X.sum(axis=0).A1
-    # document frequency (số bài có term)
+    # Document frequency: số bài có term
     df = (X > 0).sum(axis=0).A1
-
-    TECH_SIGNALS = {
-        "ai",
-        "gemini",
-        "chatbot",
-        "chrome",
-        "android",
-        "ios",
-        "iphone",
-        "ipad",
-        "mac",
-        "apple",
-        "google",
-        "google photos",
-        "samsung",
-        "galaxy",
-        "one ui",
-        "sim",
-        "vneid",
-        "thuê bao",
-        "định danh",
-        "an ninh mạng",
-        "bảo mật",
-        "mã độc",
-        "hacker",
-        "lỗ hổng",
-        "defender",
-        "microsoft",
-        "robot",
-        "hình người",
-        "drone",
-        "5g",
-        "ipv6",
-        "phần mềm",
-        "thiết bị",
-        "máy tính",
-    }
-
-    STRONG_SIGNALS = {
-        "gemini",
-        "chatbot",
-        "iphone",
-        "ios",
-        "apple",
-        "galaxy",
-        "samsung",
-        "sim",
-        "vneid",
-        "an ninh mạng",
-        "bảo mật",
-        "mã độc",
-        "lỗ hổng",
-        "defender",
-        "robot",
-        "hình người",
-        "google maps",
-        "google photos",
-        "ipv6",
-        "5g",
-    }
-
-    VERY_STRONG_SINGLETONS = {
-        "gemini",
-        "chatbot gemini",
-        "microsoft defender",
-        "google photos",
-        "google maps",
-        "ios 27",
-        "iphone 17",
-        "iphone 17 pro",
-        "iphone 17 pro max",
-        "galaxy s26",
-        "galaxy s26 ultra",
-        "one ui",
-        "one ui 8.5",
-    }
-
-    BAD_LAST_TOKENS = {"tự", "tích", "ứng", "hợp", "bổ", "nhằm", "dụng", "chính"}
-
-    GENERIC_BAD = {
-        "sử dụng",
-        "hoạt động",
-        "thành công",
-        "trở thành",
-        "nhiều người",
-        "người dùng",  # quá chung nếu đứng 1 mình
-        "triển khai",
-        "thuê bao",  # quá chung nếu đứng 1 mình
-        "hình người",  # sẽ lấy "robot hình người" thay vì "hình người"
-    }
 
     def keep_phrase(term: str, dfi: int) -> bool:
         t = term.lower()
         parts = t.split()
-        if parts and parts[-1] in BAD_LAST_TOKENS:
+        if parts and parts[-1] in BAD_KEYWORD_LAST_TOKENS:
             return False
-        if t in GENERIC_BAD:
+        if t in GENERIC_BAD_KEYWORDS:
             return False
-        # phải có tín hiệu công nghệ (token/phrase)
-        if not any(sig in t for sig in TECH_SIGNALS):
-            return False
-        # ưu tiên tín hiệu mạnh để tránh cụm chung chung
+        # phải có tín hiệu công nghệ mạnh để tránh cụm chung chung
         if not any(sig in t for sig in STRONG_SIGNALS):
             return False
 
@@ -325,21 +315,7 @@ def trending_phrases_clustered(
 
 
 def looks_like_noise_topic(text: str) -> bool:
-    t = text.lower()
-    return any(
-        k in t
-        for k in [
-            "audition",
-            "esports",
-            "marathon",
-            "tên lửa",
-            "quỹ đạo",
-            "vệ tinh",
-            "blue origin",
-            "bitcoin",
-            "btc",
-        ]
-    )
+    return _contains_any(text.lower(), NOISE_HIGHLIGHT_TOKENS)
 
 
 def highlight_category(text: str) -> str:
@@ -475,9 +451,8 @@ def llm_executive_summary_min_tokens(
     hi = highlights[:max_highlights]
 
     system = (
-        "Viết Executive Summary tiếng Việt, chỉ 1 đoạn (không xuống dòng), 4–6 câu đầy đủ."
-        "Không xuống dòng giữa câu. Không dùng bullet/đánh số. Kết thúc mỗi đoạn bằng dấu chấm."
-
+        "Viết Executive Summary tiếng Việt, chỉ 1 đoạn (không xuống dòng), 4–6 câu đầy đủ. "
+        "Không dùng bullet/đánh số. Kết thúc bằng dấu chấm."
     )
     user = (
         "Trending keywords:\n- "
@@ -543,16 +518,12 @@ def write_markdown_report(
 
     lines.append("### Highlighted News\n")
     grouped: Dict[str, List[Tuple[str, str, List[str]]]] = {
-        "AI": [],
-        "Apple & thiết bị": [],
-        "An ninh mạng": [],
-        "Chuyển đổi số / Định danh": [],
-        "Khác": [],
+        k: [] for k in HIGHLIGHT_SECTIONS
     }
     for title, summary, links in highlights:
         grouped[highlight_category(f"{title}\n{summary}")].append((title, summary, links))
 
-    for section in ["AI", "Apple & thiết bị", "An ninh mạng", "Chuyển đổi số / Định danh", "Khác"]:
+    for section in HIGHLIGHT_SECTIONS:
         items = grouped.get(section) or []
         if not items:
             continue

@@ -1,4 +1,4 @@
-## Weekly Tech News Assistant (Ngày 1)
+## Weekly Tech News Assistant 
 
 Pipeline ngày 1: **tải RSS** (VnExpress/Thanh Niên/Tuổi Trẻ) → **làm sạch snippet** (strip HTML) → **lọc 7 ngày** → **khử trùng lặp theo URL** → xuất `JSONL`.
 
