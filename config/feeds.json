@@ -1,0 +1,10 @@
+{
+  "topic": "tech",
+  "feeds": [
+    { "source": "vnexpress", "feed_url": "https://vnexpress.net/rss/so-hoa.rss" },
+    { "source": "thanhnien", "feed_url": "https://thanhnien.vn/rss/cong-nghe.rss" },
+    { "source": "tuoitre", "feed_url": "https://tuoitre.vn/rss/cong-nghe.rss" }
+  ],
+  "days": 7,
+  "out_path": "data/articles.jsonl"
+}
