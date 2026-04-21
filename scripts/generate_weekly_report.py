@@ -452,11 +452,11 @@ def write_markdown_report(
         if not items:
             continue
         lines.append(f"#### {section}\n")
-        for i, (title, summary, links) in enumerate(items, start=1):
-            lines.append(f"{i}. **{title}**")
-            lines.append(f"   - {summary}")
+        for title, summary, links in items:
+            lines.append(f"- **{title}**")
+            lines.append(f"  - {summary}")
             for u in links:
-                lines.append(f"   - Link: [{u}]({u})")
+                lines.append(f"  - Link: [{u}]({u})")
             lines.append("")
 
     out_path.write_text("\n".join(lines).strip() + "\n", encoding="utf-8")
