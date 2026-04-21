@@ -68,10 +68,45 @@ def load_stopwords_vi() -> Set[str]:
         "vn",
         "việt",
         "nam",
+        # mảnh HTML entity hay gặp khi RSS bị escape
+        "amp",
+        "quot",
+        "apos",
+        "nbsp",
+        "lt",
+        "gt",
+        "agrave",
+        "aacute",
+        "acirc",
+        "atilde",
+        "egrave",
+        "eacute",
+        "ecirc",
+        "igrave",
+        "iacute",
+        "ocirc",
+        "ograve",
+        "oacute",
+        "otilde",
+        "uacute",
+        "ugrave",
+        "yacute",
+        "039",
     }
 
 
 def join_tokens(tokens: Iterable[str], stopwords: Set[str]) -> str:
-    kept = [t for t in tokens if t and t not in stopwords and len(t) >= 2]
+    kept: List[str] = []
+    for t in tokens:
+        if not t:
+            continue
+        if t in stopwords:
+            continue
+        if len(t) < 2:
+            continue
+        # loại token toàn chữ-số kiểu "2026", "5g" vẫn giữ, nhưng loại token toàn số
+        if t.isdigit():
+            continue
+        kept.append(t)
     return " ".join(kept)
 

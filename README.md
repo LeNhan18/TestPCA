@@ -29,3 +29,17 @@ python scripts/ingest_feeds.py --config config/feeds.json --days 7 --out data/ar
 - `data/articles.jsonl` (1 dòng = 1 JSON record)
 - Schema mỗi record:
   - `source`, `feed_url`, `title`, `url`, `published_at` (ISO/UTC), `snippet`
+
+## Báo cáo tuần (đúng yêu cầu bài test)
+
+Sau khi đã có `data/articles.jsonl`, chạy script sau để sinh báo cáo tuần gồm:
+- Executive Summary
+- Trending Keywords
+- Highlighted News (kèm link nguồn)
+
+```bash
+python scripts/generate_weekly_report.py --articles data/articles.jsonl
+```
+
+Output mặc định:
+- `reports/weekly_tech_digest_YYYY-MM-DD.md`
