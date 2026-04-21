@@ -43,11 +43,9 @@ Script: `scripts/generate_weekly_report.py`
 - Corpus: `title + snippet` của từng bài
 - Tokenize tiếng Việt kiểu nhẹ (regex word)
 - Lọc stopwords tối thiểu để giảm nhiễu
-- Tính TF-IDF n-gram (2–6 từ) bằng `scikit-learn`
-- Lọc chỉ giữ cụm từ "có nghĩa":
-  - tối thiểu 3 từ
-  - ưu tiên cụm có tín hiệu công nghệ (AI/IPv6/5G/iOS/iPhone/robot/an ninh mạng/chuyển đổi số...)
-  - loại cụm bị cắt cụt/không tự nhiên (ví dụ bắt đầu bằng "thực", "việc")
+- Gộp từ khóa theo **chủ đề (topic-level)** để tránh trùng nghĩa:
+  - Ví dụ: "xác thực SIM" / "SIM chính chủ" / "thuê bao" / "VNeID" → **Xác thực SIM / VNeID**
+- Xếp hạng theo **độ phủ nhiều bài (document frequency)**, có TF-IDF hỗ trợ để giảm nhiễu từ 1 bài đơn lẻ
 
 #### 3) Chọn Highlighted News (sự kiện nổi bật)
 
@@ -88,27 +86,16 @@ Tuần qua, hệ thống thu thập được **131** bài thuộc chủ đề **
 
 Khoảng thời gian dữ liệu: từ **2026-04-14T16:50:42+00:00** đến **2026-04-21T13:37:00+00:00** (UTC).
 
-Các chủ đề nổi bật xoay quanh: **robot hình người, xác thực sim, người dùng iphone, galaxy s26 ultra, sim chính chủ, sản phẩm apple, chuyển đổi số, sai lầm phổ**.
+Các chủ đề nổi bật xoay quanh: **AI / Gemini, Apple / iPhone / iOS, Xác thực SIM / VNeID, Samsung / Galaxy, Robot / Humanoid, Thiết bị & phần mềm**.
 
 ### Trending Keywords
 
-- **robot hình người**
-- **xác thực sim**
-- **người dùng iphone**
-- **galaxy s26 ultra**
-- **sim chính chủ**
-- **sản phẩm apple**
-- **chuyển đổi số**
-- **sai lầm phổ biến**
-- **iphone pro lộ diện**
-- **an ninh mạng**
-- **màu sắc iphone pro**
-- **xác nhận sim chính**
-- **dùng iphone trung thành**
-- **marathon robot hình**
-- **chính chủ vneid**
-- **sai quỹ đạo tên lửa**
-- **vệ tinh sai**
+- **AI / Gemini**
+- **Apple / iPhone / iOS**
+- **Xác thực SIM / VNeID**
+- **Samsung / Galaxy**
+- **Robot / Humanoid**
+- **Thiết bị & phần mềm**
 
 ### Highlighted News
 

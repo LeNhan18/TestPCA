@@ -6,24 +6,16 @@ Tuần qua, hệ thống thu thập được **131** bài thuộc chủ đề **
 
 Khoảng thời gian dữ liệu: từ **2026-04-14T16:50:42+00:00** đến **2026-04-21T14:28:00+00:00** (UTC).
 
-Các chủ đề nổi bật xoay quanh: **robot hình người, xác thực sim, người dùng iphone, galaxy s26 ultra, sim chính chủ, sản phẩm apple, máy tính bảng, sai lầm phổ biến**.
+Các chủ đề nổi bật xoay quanh: **AI / Gemini, Apple / iPhone / iOS, Xác thực SIM / VNeID, Samsung / Galaxy, Robot / Humanoid, Thiết bị & phần mềm**.
 
 ### Trending Keywords
 
-- **robot hình người**
-- **xác thực sim**
-- **người dùng iphone**
-- **galaxy s26 ultra**
-- **sim chính chủ**
-- **sản phẩm apple**
-- **máy tính bảng**
-- **sai lầm phổ biến**
-- **màu sắc iphone pro**
-- **xác nhận sim chính**
-- **dùng iphone trung thành**
-- **tin thuê bao**
-- **xác thực thuê bao**
-- **chính chủ vneid**
+- **AI / Gemini**
+- **Apple / iPhone / iOS**
+- **Xác thực SIM / VNeID**
+- **Samsung / Galaxy**
+- **Robot / Humanoid**
+- **Thiết bị & phần mềm**
 
 ### Highlighted News
 

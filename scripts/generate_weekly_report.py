@@ -82,172 +82,63 @@ def build_corpus(articles: Sequence[Dict[str, Any]]) -> List[str]:
     return corpus
 
 
-def trending_keywords_tfidf(
-    corpus: Sequence[str], top_k: int
+def trending_topics(
+    corpus: Sequence[str],
+    *,
+    top_k: int,
+    min_doc_frac: float = 0.05,
 ) -> List[Tuple[str, float]]:
     """
-    Trả về cụm từ có nghĩa (ưu tiên 2-3 từ).
-
-    Lưu ý: Đây là baseline cho bài test, không phụ thuộc NLP nặng.
+    Trích xuất "Trending Keywords" theo hướng topic-level:
+    - Gộp các biến thể/synonym về 1 chủ đề canonical
+    - Ưu tiên chủ đề xuất hiện ở NHIỀU bài (document frequency), tránh cụm ngẫu nhiên
     """
-    vec = TfidfVectorizer(
-        # Ưu tiên cụm từ dài hơn để ra "keyword" có nghĩa (3-6 từ)
-        ngram_range=(2, 6),
-        min_df=2,
-        max_df=0.85,
-        sublinear_tf=True,
-    )
+
+    topic_rules: List[Tuple[str, List[str]]] = [
+        ("AI / Gemini", ["ai", "gemini", "chatbot", "llm", "claude", "chrome"]),
+        ("Apple / iPhone / iOS", ["apple", "iphone", "ios", "ipad", "mac"]),
+        ("Samsung / Galaxy", ["samsung", "galaxy", "one ui"]),
+        ("An ninh mạng", ["an ninh mạng", "bảo mật", "mã độc", "hacker", "lỗ hổng", "defender"]),
+        ("Xác thực SIM / VNeID", ["xác thực", "sim", "thuê bao", "vneid", "định danh"]),
+        ("Chuyển đổi số", ["chuyển đổi số", "định danh số", "dữ liệu số"]),
+        ("Robot / Humanoid", ["robot", "hình người", "humanoid", "drone"]),
+        ("Thiết bị & phần mềm", ["thiết bị", "phần mềm", "máy tính", "máy tính bảng"]),
+    ]
+
+    n_docs = max(len(corpus), 1)
+
+    # document frequency cho mỗi topic (đếm số bài có chứa bất kỳ hint)
+    df: Dict[str, int] = {name: 0 for name, _ in topic_rules}
+    for doc in corpus:
+        d = doc.lower()
+        for name, hints in topic_rules:
+            if any(h in d for h in hints):
+                df[name] += 1
+
+    # TF-IDF để tạo score phụ trợ (tránh chỉ đếm thô)
+    vec = TfidfVectorizer(ngram_range=(1, 2), min_df=2, max_df=0.9, sublinear_tf=True)
     X = vec.fit_transform(corpus)
     scores = X.sum(axis=0).A1
     terms = vec.get_feature_names_out()
-    ranked = sorted(
-        zip(terms, scores),
-        key=lambda x: (x[1], len(x[0].split())),  # prefer higher score, then longer phrase
-        reverse=True,
-    )
+    term_score = dict(zip(terms, scores))
 
-    # Nhóm tín hiệu "công nghệ" để hạn chế keyword noise
-    TECH_HINTS = {
-        # AI
-        "ai",
-        "gemini",
-        "chatbot",
-        "claude",
-        "llm",
-        # web/browser
-        "chrome",
-        # mobile/os
-        "android",
-        "ios",
-        "iphone",
-        "ipad",
-        "mac",
-        "samsung",
-        "galaxy",
-        # companies
-        "apple",
-        "google",
-        "meta",
-        "microsoft",
-        "defender",
-        # telecom / id
-        "ipv6",
-        "5g",
-        "sim",
-        "vneid",
-        "định danh",
-        "thuê bao",
-        "an ninh mạng",
-        "tấn công mạng",
-        "mã độc",
-        "bảo mật",
-        "lỗ hổng",
-        "chuyển đổi số",
-        "định danh số",
-        "dữ liệu số",
-        # robotics
-        "robot",
-        "drone",
-        # computing
-        "máy tính",
-        "lượng tử",
-        "quantum",
-        # health-tech
-        "mrna",
-        "vaccine",
-        "ung thư",
-        # general tech
-        "internet",
-        "thiết bị",
-        "phần mềm",
-    }
+    topic_score: Dict[str, float] = {name: 0.0 for name, _ in topic_rules}
+    for name, hints in topic_rules:
+        for h in hints:
+            # chỉ cộng nếu hint tồn tại đúng term (đơn giản hóa)
+            if h in term_score:
+                topic_score[name] += float(term_score[h])
 
-    NOISE_TOKENS = {
-        # các cụm dễ kéo sai domain/không phải "keyword chủ đề"
-        "marathon",
-        "quỹ đạo",
-        "tên lửa",
-        "vệ tinh",
-        "audition",
-        "esports",
-    }
-
-    SHORT_OK = {"ai", "ios", "5g", "sim", "ipv6", "mrna"}
-
-    def looks_truncated(term: str) -> bool:
-        parts = term.split()
-        for p in parts:
-            pl = p.lower()
-            if pl in SHORT_OK:
-                continue
-            # token quá ngắn thường là cụt (vd "di", "lo", "ve"...)
-            if len(pl) < 3 and not any(ch.isdigit() for ch in pl):
-                return True
-        return False
-
-    def is_meaningful_phrase(term: str) -> bool:
-        parts = term.split()
-        # yêu cầu cụm >= 3 từ để giống "keyword có nghĩa"
-        if len(parts) < 3:
-            return False
-
-        # loại các cụm bị cắt cụt/không tự nhiên
-        bad_prefixes = {"thực", "việc"}
-        if parts[0].lower() in bad_prefixes:
-            return False
-
-        t = term.lower()
-        if looks_truncated(term):
-            return False
-        if any(tok in t for tok in NOISE_TOKENS):
-            return False
-        # Ưu tiên cụm có "tín hiệu" công nghệ/policy
-        for hint in TECH_HINTS:
-            if hint in t:
-                return True
-
-        # Hoặc chứa chữ-số kiểu IPv6/5G/iOS 27...
-        if any(ch.isdigit() for ch in t):
-            return True
-
-        return False
-
-    def normalize_phrase(term: str) -> str:
-        # normalize đơn giản để dedupe (xóa khoảng trắng thừa)
-        return " ".join(term.lower().split())
-
-    def token_jaccard(a: str, b: str) -> float:
-        sa = set(a.split())
-        sb = set(b.split())
-        if not sa or not sb:
-            return 0.0
-        return len(sa & sb) / len(sa | sb)
-
-    def is_redundant(term: str, chosen: List[str]) -> bool:
-        t = normalize_phrase(term)
-        for c in chosen:
-            c_norm = normalize_phrase(c)
-            # substring/prefix redundancy
-            if t in c_norm or c_norm in t:
-                return True
-            # near-duplicate by token overlap
-            if token_jaccard(t, c_norm) >= 0.8:
-                return True
-        return False
-
-    # chỉ giữ cụm từ có ý nghĩa, và loại cụm lặp/na ná nhau
-    filtered_terms: List[str] = []
-    filtered: List[Tuple[str, float]] = []
-    for term, score in ranked:
-        if not is_meaningful_phrase(term):
+    # rank theo độ phủ (df) + score
+    ranked: List[Tuple[str, float]] = []
+    for name, _ in topic_rules:
+        frac = df[name] / n_docs
+        if frac < min_doc_frac:
             continue
-        if is_redundant(term, filtered_terms):
-            continue
-        filtered_terms.append(term)
-        filtered.append((term, float(score)))
-        if len(filtered) >= top_k:
-            break
-    return filtered
+        ranked.append((name, df[name] + topic_score[name]))
+
+    ranked.sort(key=lambda x: x[1], reverse=True)
+    return ranked[:top_k]
 
 
 def looks_like_noise_topic(text: str) -> bool:
@@ -469,7 +360,7 @@ def main() -> None:
     articles.sort(key=lambda a: a.get("published_at") or "", reverse=True)
 
     corpus = build_corpus(articles)
-    kw = trending_keywords_tfidf(corpus, top_k=args.top_keywords)
+    kw = trending_topics(corpus, top_k=args.top_keywords)
 
     clusters = cluster_articles(corpus, articles, threshold=args.cluster_threshold)
     highlights: List[Tuple[str, str, List[str]]] = []
