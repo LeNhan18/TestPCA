@@ -262,6 +262,8 @@ def looks_like_noise_topic(text: str) -> bool:
             "quỹ đạo",
             "vệ tinh",
             "blue origin",
+            "bitcoin",
+            "btc",
         ]
     )
 
@@ -454,7 +456,7 @@ def write_markdown_report(
             lines.append(f"{i}. **{title}**")
             lines.append(f"   - {summary}")
             for u in links:
-                lines.append(f"   - Link: {u}")
+                lines.append(f"   - Link: [{u}]({u})")
             lines.append("")
 
     out_path.write_text("\n".join(lines).strip() + "\n", encoding="utf-8")
