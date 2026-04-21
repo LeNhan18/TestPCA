@@ -39,8 +39,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--top_events",
         type=int,
-        default=10,
-        help="Number of highlighted events (default: 10)",
+        default=20,
+        help="Number of highlighted events (default: 20)",
     )
     p.add_argument(
         "--cluster_threshold",
@@ -470,11 +470,14 @@ def main() -> None:
     kw = trending_keywords_tfidf(corpus, top_k=args.top_keywords)
 
     clusters = cluster_articles(corpus, articles, threshold=args.cluster_threshold)
-    top_clusters = clusters[: args.top_events]
-    highlights = [format_highlight(c, articles) for c in top_clusters]
-    highlights = [
-        h for h in highlights if not looks_like_noise_topic(f"{h[0]}\n{h[1]}")
-    ]
+    highlights: List[Tuple[str, str, List[str]]] = []
+    for c in clusters:
+        h = format_highlight(c, articles)
+        if looks_like_noise_topic(f"{h[0]}\n{h[1]}"):
+            continue
+        highlights.append(h)
+        if len(highlights) >= args.top_events:
+            break
 
     out_path = (
         Path(args.out)

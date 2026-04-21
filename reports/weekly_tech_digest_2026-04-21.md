@@ -4,7 +4,7 @@
 
 Tuần qua, hệ thống thu thập được **131** bài thuộc chủ đề **Công nghệ** từ các nguồn **thanhnien** (50), **vnexpress** (60), **tuoitre** (21).
 
-Khoảng thời gian dữ liệu: từ **2026-04-14T16:50:42+00:00** đến **2026-04-21T13:37:00+00:00** (UTC).
+Khoảng thời gian dữ liệu: từ **2026-04-14T16:50:42+00:00** đến **2026-04-21T14:28:00+00:00** (UTC).
 
 Các chủ đề nổi bật xoay quanh: **robot hình người, xác thực sim, người dùng iphone, galaxy s26 ultra, sim chính chủ, sản phẩm apple, máy tính bảng, sai lầm phổ biến**.
 
@@ -35,13 +35,49 @@ Các chủ đề nổi bật xoay quanh: **robot hình người, xác thực sim
 
 #### Apple & thiết bị
 
-1. **3 sai lầm khiến iPhone hư hỏng nhanh hơn**
+1. **Chiêu trò tinh vi đánh cắp tiền của người dùng Apple**
+   - Nguồn: thanhnien. Khi hệ thống bảo mật của gã khổng lồ Apple bị tin tặc biến thành công cụ lừa đảo.
+   - Link: https://thanhnien.vn/chieu-tro-tinh-vi-danh-cap-tien-cua-nguoi-dung-apple-185260420215342999.htm
+
+2. **3 sai lầm khiến iPhone hư hỏng nhanh hơn**
    - Nguồn: thanhnien. Nhiều người dùng iPhone thường mắc phải 3 sai lầm tai hại khiến thiết bị dễ trở thành 'cục chặn giấy'.
    - Link: https://thanhnien.vn/3-sai-lam-khien-iphone-hu-hong-nhanh-hon-185260420210548112.htm
 
-2. **Danh sách iPhone có thể không được cập nhật iOS 27**
+3. **Danh sách iPhone có thể không được cập nhật iOS 27**
    - Nguồn: thanhnien. Apple dự kiến sẽ công bố danh sách các mẫu iPhone tương thích với bản cập nhật iOS 27 vào tháng 6 tới đây.
    - Link: https://thanhnien.vn/danh-sach-iphone-co-the-khong-duoc-cap-nhat-ios-27-185260421125924388.htm
+
+4. **Galaxy S25 bất ngờ nhận tính năng sàng lọc cuộc gọi từ One UI 8.5 beta**
+   - Nguồn: thanhnien. Samsung đã chính thức xác nhận việc triển khai tính năng sàng lọc cuộc gọi trên phiên bản One UI 8.5 beta mới nhất.
+   - Link: https://thanhnien.vn/galaxy-s25-bat-ngo-nhan-tinh-nang-sang-loc-cuoc-goi-tu-one-ui-85-beta-185260421103831919.htm
+
+5. **NASA tắt thiết bị trên tàu vũ trụ bay xa nhất lịch sử**
+   - Nguồn: vnexpress. NASA tắt thiết bị hoạt động gần 50 năm trên Voyager 1, vật thể nhân tạo cách xa Trái Đất nhất, nhằm tiết kiệm năng lượng ít ỏi còn lại.
+   - Link: https://vnexpress.net/nasa-tat-thiet-bi-tren-tau-vu-tru-bay-xa-nhat-lich-su-5065070.html
+
+6. **Huawei ra Pura X Max - smartphone gập màn hình rộng**
+   - Nguồn: vnexpress. Pura X Max là smartphone gập đầu tiên có tỷ lệ 14,1:10, rộng hơn so với tỷ lệ 4:3 và gần giống tin đồn về iPhone Fold, Galaxy Z Fold8 Wide.
+   - Link: https://vnexpress.net/huawei-ra-pura-x-max-smartphone-gap-man-hinh-rong-5065036.html
+
+7. **Những đối thủ nặng ký của MacBook Neo**
+   - Nguồn: thanhnien. Khi sự sang trọng của Apple bị đe dọa bởi hiệu năng Windows. Đối với những người dùng ưu tiên hiệu năng thực tế, các hãng như Lenovo và Asus đã tung ra những đòn đáp trả đầy sức nặng.
+   - Link: https://thanhnien.vn/nhung-doi-thu-nang-ky-cua-macbook-neo-185260420134147763.htm
+
+8. **John Ternus - từ kỹ sư cơ khí đến 'người được chọn' tại Apple**
+   - Nguồn: vnexpress. Phụ trách phần cứng cho hầu hết sản phẩm Apple nhiều năm, John Ternus từ lâu đã được dự đoán có thể kế vị CEO thay Tim Cook.
+   - Link: https://vnexpress.net/john-ternus-tu-ky-su-co-khi-den-nguoi-duoc-chon-tai-apple-5064929.html
+
+9. **Galaxy S27 có thể vượt xa giới hạn pin hiện tại của Samsung**
+   - Nguồn: thanhnien. Samsung đã từ chối tham gia vào xu hướng phát triển pin silicon-carbon (Si/C) cho đến khi công nghệ này thực sự sẵn sàng cho ứng dụng rộng rãi.
+   - Link: https://thanhnien.vn/galaxy-s27-co-the-vuot-xa-gioi-han-pin-hien-tai-cua-samsung-185260421094759835.htm
+
+10. **Cảnh 'Trái Đất lặn' quay bằng iPhone 17 Pro Max**
+   - Nguồn: vnexpress. Phi hành gia Reid Wiseman chia sẻ video khoảnh khắc Trái Đất từ từ biến mất phía sau Mặt Trăng, được quay bằng iPhone 17 Pro Max trong sứ mệnh Artemis II.
+   - Link: https://vnexpress.net/canh-trai-dat-lan-quay-bang-iphone-17-pro-max-5064880.html
+
+11. **Thực hư video Galaxy S26 Ultra dính lỗi màn hình sọc xanh**
+   - Nguồn: thanhnien. Một video ghi lại lỗi sọc xanh trên Galaxy S26 Ultra nhận được nhiều sự chú ý từ cộng đồng, nhưng cũng làm dấy lên nghi ngờ về tính xác thực.
+   - Link: https://thanhnien.vn/thuc-hu-video-galaxy-s26-ultra-dinh-loi-man-hinh-soc-xanh-185260420230243001.htm
 
 #### An ninh mạng
 
@@ -74,3 +110,7 @@ Các chủ đề nổi bật xoay quanh: **robot hình người, xác thực sim
 6. **'Đổi mới sáng tạo phải tạo giá trị thực chất'**
    - Nguồn: vnexpress. Đổi mới sáng tạo không thể dừng ở ý tưởng mà phải trở thành hành động cụ thể, tạo giá trị thực chất, theo Thứ trưởng Khoa học và Công nghệ Lê Xuân Định.
    - Link: https://vnexpress.net/doi-moi-sang-tao-phai-tao-gia-tri-thuc-chat-5065130.html
+
+7. **Giá Bitcoin hôm nay 21.4.2026: BTC sắp đạt đỉnh mới**
+   - Nguồn: thanhnien. Giá Bitcoin hôm nay tiếp tục tăng, vượt mốc 75.000 USD trong khi nhiều dự báo cho thấy thị trường sẽ chứng kiến đà tăng giá mới.
+   - Link: https://thanhnien.vn/gia-bitcoin-hom-nay-2142026-btc-sap-dat-dinh-moi-185260421072206223.htm
