@@ -90,7 +90,8 @@ def trending_keywords_tfidf(
     Lưu ý: Đây là baseline cho bài test, không phụ thuộc NLP nặng.
     """
     vec = TfidfVectorizer(
-        ngram_range=(2, 3),
+        # Ưu tiên cụm từ dài hơn để ra "keyword" có nghĩa (3-6 từ)
+        ngram_range=(2, 6),
         min_df=2,
         max_df=0.85,
         sublinear_tf=True,
@@ -100,10 +101,66 @@ def trending_keywords_tfidf(
     terms = vec.get_feature_names_out()
     ranked = sorted(zip(terms, scores), key=lambda x: x[1], reverse=True)
 
-    # chỉ giữ cụm từ có ít nhất 2 token (đã là (2,3) nhưng giữ thêm guard)
+    TECH_HINTS = {
+        "ai",
+        "gemini",
+        "chatbot",
+        "chrome",
+        "android",
+        "ios",
+        "iphone",
+        "ipad",
+        "mac",
+        "apple",
+        "google",
+        "meta",
+        "microsoft",
+        "defender",
+        "ipv6",
+        "5g",
+        "sim",
+        "vneid",
+        "an ninh mạng",
+        "tấn công mạng",
+        "mã độc",
+        "bảo mật",
+        "chuyển đổi số",
+        "định danh số",
+        "dữ liệu số",
+        "robot",
+        "drone",
+        "lượng tử",
+        "quantum",
+        "mRNA".lower(),
+        "vaccine",
+        "ung thư",
+        "internet",
+        "thiết bị",
+        "phần mềm",
+    }
+
+    def is_meaningful_phrase(term: str) -> bool:
+        parts = term.split()
+        # yêu cầu cụm >= 3 từ để giống "keyword có nghĩa"
+        if len(parts) < 3:
+            return False
+
+        t = term.lower()
+        # Ưu tiên cụm có "tín hiệu" công nghệ/policy
+        for hint in TECH_HINTS:
+            if hint in t:
+                return True
+
+        # Hoặc chứa chữ-số kiểu IPv6/5G/iOS 27...
+        if any(ch.isdigit() for ch in t):
+            return True
+
+        return False
+
+    # chỉ giữ cụm từ có ý nghĩa theo rule trên
     filtered: List[Tuple[str, float]] = []
     for term, score in ranked:
-        if " " not in term:
+        if not is_meaningful_phrase(term):
             continue
         filtered.append((term, float(score)))
         if len(filtered) >= top_k:

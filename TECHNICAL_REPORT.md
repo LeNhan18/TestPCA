@@ -43,8 +43,10 @@ Script: `scripts/generate_weekly_report.py`
 - Corpus: `title + snippet` của từng bài
 - Tokenize tiếng Việt kiểu nhẹ (regex word)
 - Lọc stopwords tối thiểu để giảm nhiễu
-- Tính TF-IDF (1-gram và 2-gram) bằng `scikit-learn`
-- Chọn top keyword theo tổng điểm TF-IDF toàn tập
+- Tính TF-IDF n-gram (2–6 từ) bằng `scikit-learn`
+- Lọc chỉ giữ cụm từ "có nghĩa":
+  - tối thiểu 3 từ
+  - ưu tiên cụm có tín hiệu công nghệ (AI/IPv6/5G/iOS/iPhone/robot/an ninh mạng/chuyển đổi số...)
 
 #### 3) Chọn Highlighted News (sự kiện nổi bật)
 
@@ -84,35 +86,25 @@ Tuần qua, hệ thống thu thập được **131** bài thuộc chủ đề **
 
 Khoảng thời gian dữ liệu: từ **2026-04-14T16:50:42+00:00** đến **2026-04-21T13:37:00+00:00** (UTC).
 
-Các chủ đề nổi bật xoay quanh: **công nghệ, người dùng, trung quốc, điện thoại, sử dụng, hoạt động, tính năng, nhiều người**.
+Các chủ đề nổi bật xoay quanh: **robot hình người, xác thực sim, người dùng iphone, galaxy s26 ultra, sim chính chủ, sản phẩm apple, chuyển đổi số, sai lầm phổ**.
 
 ### Trending Keywords
 
-- **công nghệ**
-- **người dùng**
-- **trung quốc**
-- **điện thoại**
-- **sử dụng**
-- **hoạt động**
-- **tính năng**
-- **nhiều người**
-- **phát triển**
-- **thử nghiệm**
-- **iphone pro**
-- **hình người**
-- **robot hình**
 - **robot hình người**
-- **xác thực**
-- **máy tính**
-- **thị trường**
-- **sản phẩm**
-- **tích hợp**
-- **phiên bản**
-- **thành công**
-- **thay đổi**
-- **doanh nghiệp**
-- **triển khai**
-- **trở thành**
+- **xác thực sim**
+- **người dùng iphone**
+- **galaxy s26 ultra**
+- **sim chính chủ**
+- **sản phẩm apple**
+- **chuyển đổi số**
+- **sai lầm phổ**
+- **sai lầm phổ biến**
+- **việc triển khai**
+- **iphone pro lộ**
+- **iphone pro lộ diện**
+- **an ninh mạng**
+- **màu sắc iphone**
+- **màu sắc iphone pro**
 
 ### Highlighted News
 
