@@ -6,7 +6,8 @@ from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
+import re
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -15,6 +16,86 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 from src.reporting.text_prep import basic_vi_tokenize, join_tokens, load_stopwords_vi
+from src.llm.openai_compat import chat_completions_min_tokens
+
+
+HIGHLIGHT_SECTIONS = [
+    "AI",
+    "Apple & thiết bị",
+    "An ninh mạng",
+    "Chuyển đổi số / Định danh",
+    "Khác",
+]
+
+NOISE_HIGHLIGHT_TOKENS = [
+    "audition",
+    "esports",
+    "marathon",
+    "tên lửa",
+    "quỹ đạo",
+    "vệ tinh",
+    "blue origin",
+    "bitcoin",
+    "btc",
+]
+
+BAD_KEYWORD_LAST_TOKENS = {"tự", "tích", "ứng", "hợp", "bổ", "nhằm", "dụng", "chính"}
+
+# Các cụm quá chung, không nên xuất hiện như keyword độc lập
+GENERIC_BAD_KEYWORDS = {
+    "sử dụng",
+    "hoạt động",
+    "thành công",
+    "trở thành",
+    "nhiều người",
+    "người dùng",
+    "triển khai",
+    "thuê bao",
+    "hình người",
+}
+
+# Keyword phải chứa "tín hiệu công nghệ" mạnh (để giống headline trend hơn)
+STRONG_SIGNALS = {
+    "gemini",
+    "chatbot",
+    "chrome",
+    "iphone",
+    "ios",
+    "apple",
+    "galaxy",
+    "samsung",
+    "sim",
+    "vneid",
+    "an ninh mạng",
+    "bảo mật",
+    "mã độc",
+    "lỗ hổng",
+    "defender",
+    "microsoft",
+    "robot",
+    "hình người",
+    "google maps",
+    "google photos",
+    "ipv6",
+    "5g",
+}
+
+# Nếu keyword chỉ xuất hiện 1 bài, chỉ giữ nếu cực "đậm tech"
+VERY_STRONG_SINGLETONS = {
+    "gemini",
+    "chatbot gemini",
+    "microsoft defender",
+    "google photos",
+    "google maps",
+    "ios 27",
+    "iphone 17",
+    "iphone 17 pro",
+    "iphone 17 pro max",
+    "galaxy s26",
+    "galaxy s26 ultra",
+    "one ui",
+    "one ui 8.5",
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -38,14 +119,19 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--top_events",
         type=int,
-        default=10,
-        help="Number of highlighted events (default: 10)",
+        default=20,
+        help="Number of highlighted events (default: 20)",
     )
     p.add_argument(
         "--cluster_threshold",
         type=float,
         default=0.62,
         help="Cosine similarity threshold for clustering (default: 0.62)",
+    )
+    p.add_argument(
+        "--llm_summary",
+        action="store_true",
+        help="Use LLM API to write Executive Summary (requires LLM_API_KEY).",
     )
     return p.parse_args()
 
@@ -81,34 +167,191 @@ def build_corpus(articles: Sequence[Dict[str, Any]]) -> List[str]:
     return corpus
 
 
-def trending_keywords_tfidf(
-    corpus: Sequence[str], top_k: int
-) -> List[Tuple[str, float]]:
+def build_title_corpus(articles: Sequence[Dict[str, Any]]) -> List[str]:
     """
-    Trả về cụm từ có nghĩa (ưu tiên 2-3 từ).
+    Corpus chỉ từ tiêu đề để keyword tự nhiên hơn (giống headline),
+    giảm nhiễu từ snippet dài.
+    """
+    stop = load_stopwords_vi()
+    corpus: List[str] = []
+    for a in articles:
+        title = html.unescape((a.get("title") or "").strip())
+        tokens = basic_vi_tokenize(title)
+        corpus.append(join_tokens(tokens, stop))
+    return corpus
 
-    Lưu ý: Đây là baseline cho bài test, không phụ thuộc NLP nặng.
-    """
+
+def _contains_any(haystack: str, needles: Sequence[str]) -> bool:
+    return any(n in haystack for n in needles)
+
+
+def trending_phrases_clustered(
+    corpus: Sequence[str],
+    *,
+    top_k: int,
+    min_df_docs: int = 2,
+) -> List[Tuple[str, float]]:
+    if not corpus:
+        return []
+
     vec = TfidfVectorizer(
-        ngram_range=(2, 3),
-        min_df=2,
+        # 2-6 từ/cụm để ra keyword "tự nhiên" hơn
+        ngram_range=(2, 6),
+        min_df=1,
         max_df=0.85,
         sublinear_tf=True,
     )
     X = vec.fit_transform(corpus)
-    scores = X.sum(axis=0).A1
     terms = vec.get_feature_names_out()
-    ranked = sorted(zip(terms, scores), key=lambda x: x[1], reverse=True)
 
-    # chỉ giữ cụm từ có ít nhất 2 token (đã là (2,3) nhưng giữ thêm guard)
-    filtered: List[Tuple[str, float]] = []
-    for term, score in ranked:
-        if " " not in term:
-            continue
-        filtered.append((term, float(score)))
-        if len(filtered) >= top_k:
+    # TF-IDF sum score
+    tfidf_sum = X.sum(axis=0).A1
+    # Document frequency: số bài có term
+    df = (X > 0).sum(axis=0).A1
+
+    def keep_phrase(term: str, dfi: int) -> bool:
+        t = term.lower()
+        parts = t.split()
+        if parts and parts[-1] in BAD_KEYWORD_LAST_TOKENS:
+            return False
+        if t in GENERIC_BAD_KEYWORDS:
+            return False
+        # phải có tín hiệu công nghệ mạnh để tránh cụm chung chung
+        if not any(sig in t for sig in STRONG_SIGNALS):
+            return False
+
+        # cần xuất hiện ở nhiều bài; nếu df=1 thì chỉ giữ nếu thuộc nhóm "rất mạnh"
+        if dfi < min_df_docs:
+            if not any(v in t for v in VERY_STRONG_SINGLETONS):
+                return False
+        # loại cụm quá chung kiểu "người dùng iphone trung thành" (động từ)
+        if any(v in t for v in ["trung thành", "phổ biến", "sai lầm"]):
+            return False
+        # loại cụm bị cắt: "thực sim" nhưng không phải "xác thực ..."
+        if "thực" in t and "xác thực" not in t:
+            return False
+        # loại cụm robot hình nhưng thiếu "người"
+        if "robot hình" in t and "người" not in t:
+            return False
+        return True
+
+    candidates: List[Tuple[str, int, float]] = []
+    for term, dfi, si in zip(terms, df, tfidf_sum):
+        if keep_phrase(term, int(dfi)):
+            candidates.append((term, int(dfi), float(si)))
+
+    # sort by df first, then tfidf
+    candidates.sort(key=lambda x: (x[1], x[2]), reverse=True)
+
+    # clustering rule-based (synonyms/variants)
+    def cluster_id(term: str) -> str:
+        t = term.lower()
+        if "google maps" in t:
+            return "google_maps"
+        if "google photos" in t:
+            return "google_photos"
+        # SIM/VNeID/thuê bao
+        if any(k in t for k in ["sim", "thuê bao", "vneid", "định danh"]):
+            return "sim_vneid"
+        # AI/Gemini/Chatbot/Chrome
+        if any(k in t for k in ["gemini", "chatbot", "ai", "chrome"]):
+            return "ai_gemini"
+        # Apple/iPhone/iOS
+        if any(k in t for k in ["apple", "iphone", "ios", "ipad", "mac"]):
+            return "apple_ios"
+        # Samsung/Galaxy/One UI
+        if any(k in t for k in ["samsung", "galaxy", "one ui"]):
+            return "samsung_galaxy"
+        # Security
+        if any(k in t for k in ["an ninh mạng", "bảo mật", "mã độc", "hacker", "lỗ hổng", "defender"]):
+            return "security"
+        # Robot/Humanoid/Drone
+        if any(k in t for k in ["robot", "hình người", "humanoid", "drone"]):
+            return "robot"
+        return term  # self cluster
+
+    # pick representative per cluster (highest df, then tfidf)
+    best: Dict[str, Tuple[str, int, float]] = {}
+    cluster_best_score: Dict[str, float] = {}
+
+    for term, dfi, si in candidates:
+        cid = cluster_id(term)
+        score = dfi + si
+        # keep best representative phrase
+        cur = best.get(cid)
+        # ưu tiên phrase "đúng lõi" cho cluster SIM (chứa sim/vneid)
+        if cid == "sim_vneid":
+            t = term.lower()
+            core = ("sim" in t) and (("vneid" in t) or ("chính chủ" in t) or ("xác thực" in t))
+            cur_core = (
+                cur is not None
+                and (
+                    ("sim" in cur[0].lower())
+                    and (
+                        ("vneid" in cur[0].lower())
+                        or ("chính chủ" in cur[0].lower())
+                        or ("xác thực" in cur[0].lower())
+                    )
+                )
+            )
+            if cur is None or (core and not cur_core) or ((dfi, si) > (cur[1], cur[2]) and (core == cur_core)):
+                best[cid] = (term, dfi, si)
+        else:
+            if cur is None or (dfi, si) > (cur[1], cur[2]):
+                best[cid] = (term, dfi, si)
+        cluster_best_score[cid] = max(cluster_best_score.get(cid, 0.0), score)
+
+    ranked_clusters = sorted(
+        cluster_best_score.items(), key=lambda x: x[1], reverse=True
+    )
+
+    out: List[Tuple[str, float]] = []
+    for cid, score in ranked_clusters:
+        term, dfi, si = best[cid]
+        out.append((term, score))
+        if len(out) >= top_k:
             break
-    return filtered
+    return out
+
+
+def looks_like_noise_topic(text: str) -> bool:
+    return _contains_any(text.lower(), NOISE_HIGHLIGHT_TOKENS)
+
+
+def highlight_category(text: str) -> str:
+    t = text.lower()
+    tokens = set(re.findall(r"[0-9A-Za-zÀ-ỹ]+", t))
+
+    def has_word(w: str) -> bool:
+        return w in tokens
+
+    if any(has_word(k) for k in ["ai", "gemini", "chatbot", "llm", "claude"]):
+        return "AI"
+    if any(
+        k in t
+        for k in [
+            "apple",
+            "iphone",
+            "ios",
+            "ipad",
+            "mac",
+            "galaxy",
+            "samsung",
+            "thiết bị",
+        ]
+    ):
+        return "Apple & thiết bị"
+    if any(
+        k in t
+        for k in ["an ninh mạng", "mã độc", "bảo mật", "hacker", "lỗ hổng", "defender"]
+    ):
+        return "An ninh mạng"
+    if any(
+        k in t
+        for k in ["chuyển đổi số", "định danh", "vneid", "dữ liệu số", "thuê bao", "sim"]
+    ):
+        return "Chuyển đổi số / Định danh"
+    return "Khác"
 
 
 @dataclass
@@ -193,6 +436,36 @@ def executive_summary(
     return "\n\n".join(lines)
 
 
+def llm_executive_summary_min_tokens(
+    *,
+    keywords: Sequence[Tuple[str, float]],
+    highlights: Sequence[Tuple[str, str, List[str]]],
+    max_highlights: int = 8,
+) -> str:
+    # Truncate để tiết kiệm token: chỉ gửi title + 1 câu mô tả ngắn
+    def short(s: str, n: int) -> str:
+        s = (s or "").strip()
+        return s if len(s) <= n else s[: n - 1] + "…"
+
+    kw = [k for (k, _) in keywords[:12]]
+    hi = highlights[:max_highlights]
+
+    system = (
+        "Viết Executive Summary tiếng Việt, chỉ 1 đoạn (không xuống dòng), 4–6 câu đầy đủ. "
+        "Không dùng bullet/đánh số. Kết thúc bằng dấu chấm."
+    )
+    user = (
+        "Trending keywords:\n- "
+        + "\n- ".join(kw)
+        + "\n\nTop highlights (title — snippet):\n"
+        + "\n".join(
+            f"- {short(t, 90)} — {short(s, 180)}" for (t, s, _links) in hi
+        )
+    )
+
+    return chat_completions_min_tokens(system=system, user=user)
+
+
 def format_highlight(
     cluster: Cluster, articles: Sequence[Dict[str, Any]]
 ) -> Tuple[str, str, List[str]]:
@@ -226,6 +499,7 @@ def write_markdown_report(
     articles: Sequence[Dict[str, Any]],
     keywords: Sequence[Tuple[str, float]],
     highlights: Sequence[Tuple[str, str, List[str]]],
+    executive: str,
 ) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -234,8 +508,7 @@ def write_markdown_report(
     lines.append(f"## Weekly News Update — {topic} ({today})\n")
 
     lines.append("### Executive Summary\n")
-    # Executive summary dựa trên keywords + thống kê dataset
-    lines.append(executive_summary(articles, keywords, []))
+    lines.append(executive)
     lines.append("")
 
     lines.append("### Trending Keywords\n")
@@ -244,12 +517,23 @@ def write_markdown_report(
     lines.append("")
 
     lines.append("### Highlighted News\n")
-    for i, (title, summary, links) in enumerate(highlights, start=1):
-        lines.append(f"{i}. **{title}**")
-        lines.append(f"   - {summary}")
-        for u in links:
-            lines.append(f"   - Link: {u}")
-        lines.append("")
+    grouped: Dict[str, List[Tuple[str, str, List[str]]]] = {
+        k: [] for k in HIGHLIGHT_SECTIONS
+    }
+    for title, summary, links in highlights:
+        grouped[highlight_category(f"{title}\n{summary}")].append((title, summary, links))
+
+    for section in HIGHLIGHT_SECTIONS:
+        items = grouped.get(section) or []
+        if not items:
+            continue
+        lines.append(f"#### {section}\n")
+        for title, summary, links in items:
+            lines.append(f"- **{title}**")
+            lines.append(f"  - {summary}")
+            for u in links:
+                lines.append(f"  - Link: [{u}]({u})")
+            lines.append("")
 
     out_path.write_text("\n".join(lines).strip() + "\n", encoding="utf-8")
 
@@ -261,11 +545,27 @@ def main() -> None:
     articles.sort(key=lambda a: a.get("published_at") or "", reverse=True)
 
     corpus = build_corpus(articles)
-    kw = trending_keywords_tfidf(corpus, top_k=args.top_keywords)
+    kw = trending_phrases_clustered(build_title_corpus(articles), top_k=args.top_keywords)
 
     clusters = cluster_articles(corpus, articles, threshold=args.cluster_threshold)
-    top_clusters = clusters[: args.top_events]
-    highlights = [format_highlight(c, articles) for c in top_clusters]
+    highlights: List[Tuple[str, str, List[str]]] = []
+    for c in clusters:
+        h = format_highlight(c, articles)
+        if looks_like_noise_topic(f"{h[0]}\n{h[1]}"):
+            continue
+        highlights.append(h)
+        if len(highlights) >= args.top_events:
+            break
+
+    exec_text = executive_summary(articles, kw, [])
+    if args.llm_summary:
+        try:
+            exec_text = llm_executive_summary_min_tokens(
+                keywords=kw, highlights=highlights, max_highlights=8
+            )
+        except Exception as e:
+            # fallback to deterministic summary if LLM call fails
+            exec_text = exec_text + f"\n\n(Lưu ý: LLM summary thất bại: {e})"
 
     out_path = (
         Path(args.out)
@@ -278,6 +578,7 @@ def main() -> None:
         articles=articles,
         keywords=kw,
         highlights=highlights,
+        executive=exec_text,
     )
     print(f"Report generated: {out_path.as_posix()}")
 
