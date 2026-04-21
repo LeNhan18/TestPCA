@@ -40,7 +40,6 @@ def chat_completions_min_tokens(
     - LLM_BASE_URL (mặc định https://api.openai.com)
     - LLM_MODEL (mặc định gpt-4o-mini)
     """
-
     api_key = api_key or os.getenv("LLM_API_KEY")
     if not api_key:
         raise RuntimeError("Missing LLM_API_KEY env var")

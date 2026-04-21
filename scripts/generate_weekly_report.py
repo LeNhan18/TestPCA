@@ -106,7 +106,8 @@ def trending_phrases_clustered(
         return []
 
     vec = TfidfVectorizer(
-        ngram_range=(2, 3),
+        # 2-6 từ/cụm để ra keyword "tự nhiên" hơn
+        ngram_range=(2, 6),
         min_df=1,
         max_df=0.85,
         sublinear_tf=True,
