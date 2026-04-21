@@ -82,63 +82,225 @@ def build_corpus(articles: Sequence[Dict[str, Any]]) -> List[str]:
     return corpus
 
 
-def trending_topics(
+def trending_phrases_clustered(
     corpus: Sequence[str],
     *,
     top_k: int,
-    min_doc_frac: float = 0.05,
+    min_df_docs: int = 2,
 ) -> List[Tuple[str, float]]:
     """
-    Trích xuất "Trending Keywords" theo hướng topic-level:
-    - Gộp các biến thể/synonym về 1 chủ đề canonical
-    - Ưu tiên chủ đề xuất hiện ở NHIỀU bài (document frequency), tránh cụm ngẫu nhiên
+    Trending keywords dạng "cụm từ tự nhiên", nhưng có gộp synonym/biến thể.
+
+    - Candidate: n-gram 2-3 từ
+    - Rank: ưu tiên xuất hiện ở NHIỀU bài (document frequency) + TF-IDF hỗ trợ
+    - Dedup/group: gộp các cụm cùng chủ đề (vd xác thực SIM / SIM chính chủ / thuê bao / VNeID)
     """
 
-    topic_rules: List[Tuple[str, List[str]]] = [
-        ("AI / Gemini", ["ai", "gemini", "chatbot", "llm", "claude", "chrome"]),
-        ("Apple / iPhone / iOS", ["apple", "iphone", "ios", "ipad", "mac"]),
-        ("Samsung / Galaxy", ["samsung", "galaxy", "one ui"]),
-        ("An ninh mạng", ["an ninh mạng", "bảo mật", "mã độc", "hacker", "lỗ hổng", "defender"]),
-        ("Xác thực SIM / VNeID", ["xác thực", "sim", "thuê bao", "vneid", "định danh"]),
-        ("Chuyển đổi số", ["chuyển đổi số", "định danh số", "dữ liệu số"]),
-        ("Robot / Humanoid", ["robot", "hình người", "humanoid", "drone"]),
-        ("Thiết bị & phần mềm", ["thiết bị", "phần mềm", "máy tính", "máy tính bảng"]),
-    ]
+    if not corpus:
+        return []
 
-    n_docs = max(len(corpus), 1)
-
-    # document frequency cho mỗi topic (đếm số bài có chứa bất kỳ hint)
-    df: Dict[str, int] = {name: 0 for name, _ in topic_rules}
-    for doc in corpus:
-        d = doc.lower()
-        for name, hints in topic_rules:
-            if any(h in d for h in hints):
-                df[name] += 1
-
-    # TF-IDF để tạo score phụ trợ (tránh chỉ đếm thô)
-    vec = TfidfVectorizer(ngram_range=(1, 2), min_df=2, max_df=0.9, sublinear_tf=True)
+    vec = TfidfVectorizer(
+        ngram_range=(2, 3),
+        min_df=1,
+        max_df=0.85,
+        sublinear_tf=True,
+    )
     X = vec.fit_transform(corpus)
-    scores = X.sum(axis=0).A1
     terms = vec.get_feature_names_out()
-    term_score = dict(zip(terms, scores))
 
-    topic_score: Dict[str, float] = {name: 0.0 for name, _ in topic_rules}
-    for name, hints in topic_rules:
-        for h in hints:
-            # chỉ cộng nếu hint tồn tại đúng term (đơn giản hóa)
-            if h in term_score:
-                topic_score[name] += float(term_score[h])
+    # tf-idf sum score
+    tfidf_sum = X.sum(axis=0).A1
+    # document frequency (số bài có term)
+    df = (X > 0).sum(axis=0).A1
 
-    # rank theo độ phủ (df) + score
-    ranked: List[Tuple[str, float]] = []
-    for name, _ in topic_rules:
-        frac = df[name] / n_docs
-        if frac < min_doc_frac:
-            continue
-        ranked.append((name, df[name] + topic_score[name]))
+    TECH_SIGNALS = {
+        "ai",
+        "gemini",
+        "chatbot",
+        "chrome",
+        "android",
+        "ios",
+        "iphone",
+        "ipad",
+        "mac",
+        "apple",
+        "google",
+        "google photos",
+        "samsung",
+        "galaxy",
+        "one ui",
+        "sim",
+        "vneid",
+        "thuê bao",
+        "định danh",
+        "an ninh mạng",
+        "bảo mật",
+        "mã độc",
+        "hacker",
+        "lỗ hổng",
+        "defender",
+        "microsoft",
+        "robot",
+        "hình người",
+        "drone",
+        "5g",
+        "ipv6",
+        "phần mềm",
+        "thiết bị",
+        "máy tính",
+    }
 
-    ranked.sort(key=lambda x: x[1], reverse=True)
-    return ranked[:top_k]
+    STRONG_SIGNALS = {
+        "gemini",
+        "chatbot",
+        "iphone",
+        "ios",
+        "apple",
+        "galaxy",
+        "samsung",
+        "sim",
+        "vneid",
+        "an ninh mạng",
+        "bảo mật",
+        "mã độc",
+        "lỗ hổng",
+        "defender",
+        "robot",
+        "hình người",
+        "google maps",
+        "google photos",
+        "ipv6",
+        "5g",
+    }
+
+    VERY_STRONG_SINGLETONS = {
+        "gemini",
+        "chatbot gemini",
+        "microsoft defender",
+        "google photos",
+        "google maps",
+        "ios 27",
+        "iphone 17",
+        "iphone 17 pro",
+        "iphone 17 pro max",
+        "galaxy s26",
+        "galaxy s26 ultra",
+        "one ui",
+        "one ui 8.5",
+    }
+
+    BAD_LAST_TOKENS = {"tự", "tích", "ứng", "hợp", "bổ", "nhằm", "dụng"}
+
+    GENERIC_BAD = {
+        "sử dụng",
+        "hoạt động",
+        "thành công",
+        "trở thành",
+        "nhiều người",
+        "người dùng",  # quá chung nếu đứng 1 mình
+        "triển khai",
+        "thuê bao",  # quá chung nếu đứng 1 mình
+        "hình người",  # sẽ lấy "robot hình người" thay vì "hình người"
+    }
+
+    def keep_phrase(term: str, dfi: int) -> bool:
+        t = term.lower()
+        parts = t.split()
+        if parts and parts[-1] in BAD_LAST_TOKENS:
+            return False
+        if t in GENERIC_BAD:
+            return False
+        # phải có tín hiệu công nghệ (token/phrase)
+        if not any(sig in t for sig in TECH_SIGNALS):
+            return False
+        # ưu tiên tín hiệu mạnh để tránh cụm chung chung
+        if not any(sig in t for sig in STRONG_SIGNALS):
+            return False
+
+        # cần xuất hiện ở nhiều bài; nếu df=1 thì chỉ giữ nếu thuộc nhóm "rất mạnh"
+        if dfi < min_df_docs:
+            if not any(v in t for v in VERY_STRONG_SINGLETONS):
+                return False
+        # loại cụm quá chung kiểu "người dùng iphone trung thành" (động từ)
+        if any(v in t for v in ["trung thành", "phổ biến", "sai lầm"]):
+            return False
+        # loại cụm bị cắt: "thực sim" nhưng không phải "xác thực ..."
+        if "thực" in t and "xác thực" not in t:
+            return False
+        # loại cụm robot hình nhưng thiếu "người"
+        if "robot hình" in t and "người" not in t:
+            return False
+        return True
+
+    candidates: List[Tuple[str, int, float]] = []
+    for term, dfi, si in zip(terms, df, tfidf_sum):
+        if keep_phrase(term, int(dfi)):
+            candidates.append((term, int(dfi), float(si)))
+
+    # sort by df first, then tfidf
+    candidates.sort(key=lambda x: (x[1], x[2]), reverse=True)
+
+    # clustering rule-based (synonyms/variants)
+    def cluster_id(term: str) -> str:
+        t = term.lower()
+        if "google maps" in t:
+            return "google_maps"
+        if "google photos" in t:
+            return "google_photos"
+        # SIM/VNeID/thuê bao
+        if any(k in t for k in ["sim", "thuê bao", "vneid", "định danh"]):
+            return "sim_vneid"
+        # AI/Gemini/Chatbot/Chrome
+        if any(k in t for k in ["gemini", "chatbot", "ai", "chrome"]):
+            return "ai_gemini"
+        # Apple/iPhone/iOS
+        if any(k in t for k in ["apple", "iphone", "ios", "ipad", "mac"]):
+            return "apple_ios"
+        # Samsung/Galaxy/One UI
+        if any(k in t for k in ["samsung", "galaxy", "one ui"]):
+            return "samsung_galaxy"
+        # Security
+        if any(k in t for k in ["an ninh mạng", "bảo mật", "mã độc", "hacker", "lỗ hổng", "defender"]):
+            return "security"
+        # Robot/Humanoid/Drone
+        if any(k in t for k in ["robot", "hình người", "humanoid", "drone"]):
+            return "robot"
+        return term  # self cluster
+
+    # pick representative per cluster (highest df, then tfidf)
+    best: Dict[str, Tuple[str, int, float]] = {}
+    cluster_best_score: Dict[str, float] = {}
+
+    for term, dfi, si in candidates:
+        cid = cluster_id(term)
+        score = dfi + si
+        # keep best representative phrase
+        cur = best.get(cid)
+        # ưu tiên phrase "đúng lõi" cho cluster SIM (chứa sim/vneid)
+        if cid == "sim_vneid":
+            core = ("sim" in term.lower()) or ("vneid" in term.lower())
+            cur_core = (
+                cur is not None
+                and (("sim" in cur[0].lower()) or ("vneid" in cur[0].lower()))
+            )
+            if cur is None or (core and not cur_core) or ((dfi, si) > (cur[1], cur[2]) and (core == cur_core)):
+                best[cid] = (term, dfi, si)
+        else:
+            if cur is None or (dfi, si) > (cur[1], cur[2]):
+                best[cid] = (term, dfi, si)
+        cluster_best_score[cid] = max(cluster_best_score.get(cid, 0.0), score)
+
+    ranked_clusters = sorted(
+        cluster_best_score.items(), key=lambda x: x[1], reverse=True
+    )
+
+    out: List[Tuple[str, float]] = []
+    for cid, score in ranked_clusters:
+        term, dfi, si = best[cid]
+        out.append((term, score))
+        if len(out) >= top_k:
+            break
+    return out
 
 
 def looks_like_noise_topic(text: str) -> bool:
@@ -360,7 +522,7 @@ def main() -> None:
     articles.sort(key=lambda a: a.get("published_at") or "", reverse=True)
 
     corpus = build_corpus(articles)
-    kw = trending_topics(corpus, top_k=args.top_keywords)
+    kw = trending_phrases_clustered(corpus, top_k=args.top_keywords)
 
     clusters = cluster_articles(corpus, articles, threshold=args.cluster_threshold)
     highlights: List[Tuple[str, str, List[str]]] = []

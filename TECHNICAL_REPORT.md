@@ -86,16 +86,18 @@ Tuần qua, hệ thống thu thập được **131** bài thuộc chủ đề **
 
 Khoảng thời gian dữ liệu: từ **2026-04-14T16:50:42+00:00** đến **2026-04-21T13:37:00+00:00** (UTC).
 
-Các chủ đề nổi bật xoay quanh: **AI / Gemini, Apple / iPhone / iOS, Xác thực SIM / VNeID, Samsung / Galaxy, Robot / Humanoid, Thiết bị & phần mềm**.
+Các chủ đề nổi bật xoay quanh: **robot hình người, iPhone Pro, xác thực SIM, Galaxy S26, Google Maps, bảo mật, Google Photos, Gemini tự động**.
 
 ### Trending Keywords
 
-- **AI / Gemini**
-- **Apple / iPhone / iOS**
-- **Xác thực SIM / VNeID**
-- **Samsung / Galaxy**
-- **Robot / Humanoid**
-- **Thiết bị & phần mềm**
+- **robot hình người**
+- **iphone pro**
+- **xác thực sim**
+- **galaxy s26**
+- **google maps**
+- **bảo mật**
+- **google photos**
+- **gemini tự động**
 
 ### Highlighted News
 
