@@ -6,35 +6,35 @@ Tuần qua, hệ thống thu thập được **131** bài thuộc chủ đề **
 
 Khoảng thời gian dữ liệu: từ **2026-04-14T16:50:42+00:00** đến **2026-04-21T13:37:00+00:00** (UTC).
 
-Các chủ đề nổi bật xoay quanh: **người, công, iphone, thể, dùng, công nghệ, nghệ, thực**.
+Các chủ đề nổi bật xoay quanh: **công nghệ, người dùng, trung quốc, điện thoại, sử dụng, hoạt động, tính năng, nhiều người**.
 
 ### Trending Keywords
 
-- **người**
-- **công**
-- **iphone**
-- **thể**
-- **dùng**
 - **công nghệ**
-- **nghệ**
-- **thực**
-- **điện**
-- **nhiều**
-- **apple**
-- **trung**
-- **hình**
-- **đầu**
-- **số**
-- **động**
-- **dụng**
 - **người dùng**
-- **quốc**
-- **giá**
-- **năng**
-- **thành**
-- **tính**
-- **thiết**
-- **tạo**
+- **trung quốc**
+- **điện thoại**
+- **sử dụng**
+- **hoạt động**
+- **tính năng**
+- **nhiều người**
+- **phát triển**
+- **thử nghiệm**
+- **iphone pro**
+- **hình người**
+- **robot hình**
+- **robot hình người**
+- **xác thực**
+- **máy tính**
+- **thị trường**
+- **sản phẩm**
+- **tích hợp**
+- **phiên bản**
+- **thành công**
+- **thay đổi**
+- **doanh nghiệp**
+- **triển khai**
+- **trở thành**
 
 ### Highlighted News
 

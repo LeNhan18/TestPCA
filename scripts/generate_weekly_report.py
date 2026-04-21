@@ -81,9 +81,16 @@ def build_corpus(articles: Sequence[Dict[str, Any]]) -> List[str]:
     return corpus
 
 
-def trending_keywords_tfidf(corpus: Sequence[str], top_k: int) -> List[Tuple[str, float]]:
+def trending_keywords_tfidf(
+    corpus: Sequence[str], top_k: int
+) -> List[Tuple[str, float]]:
+    """
+    Trả về cụm từ có nghĩa (ưu tiên 2-3 từ).
+
+    Lưu ý: Đây là baseline cho bài test, không phụ thuộc NLP nặng.
+    """
     vec = TfidfVectorizer(
-        ngram_range=(1, 2),
+        ngram_range=(2, 3),
         min_df=2,
         max_df=0.85,
         sublinear_tf=True,
@@ -92,7 +99,16 @@ def trending_keywords_tfidf(corpus: Sequence[str], top_k: int) -> List[Tuple[str
     scores = X.sum(axis=0).A1
     terms = vec.get_feature_names_out()
     ranked = sorted(zip(terms, scores), key=lambda x: x[1], reverse=True)
-    return ranked[:top_k]
+
+    # chỉ giữ cụm từ có ít nhất 2 token (đã là (2,3) nhưng giữ thêm guard)
+    filtered: List[Tuple[str, float]] = []
+    for term, score in ranked:
+        if " " not in term:
+            continue
+        filtered.append((term, float(score)))
+        if len(filtered) >= top_k:
+            break
+    return filtered
 
 
 @dataclass
