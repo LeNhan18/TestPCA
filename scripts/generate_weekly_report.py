@@ -88,20 +88,26 @@ def build_corpus(articles: Sequence[Dict[str, Any]]) -> List[str]:
     return corpus
 
 
+def build_title_corpus(articles: Sequence[Dict[str, Any]]) -> List[str]:
+    """
+    Corpus chỉ từ tiêu đề để keyword tự nhiên hơn (giống headline),
+    giảm nhiễu từ snippet dài.
+    """
+    stop = load_stopwords_vi()
+    corpus: List[str] = []
+    for a in articles:
+        title = html.unescape((a.get("title") or "").strip())
+        tokens = basic_vi_tokenize(title)
+        corpus.append(join_tokens(tokens, stop))
+    return corpus
+
+
 def trending_phrases_clustered(
     corpus: Sequence[str],
     *,
     top_k: int,
     min_df_docs: int = 2,
 ) -> List[Tuple[str, float]]:
-    """
-    Trending keywords dạng "cụm từ tự nhiên", nhưng có gộp synonym/biến thể.
-
-    - Candidate: n-gram 2-3 từ
-    - Rank: ưu tiên xuất hiện ở NHIỀU bài (document frequency) + TF-IDF hỗ trợ
-    - Dedup/group: gộp các cụm cùng chủ đề (vd xác thực SIM / SIM chính chủ / thuê bao / VNeID)
-    """
-
     if not corpus:
         return []
 
@@ -196,7 +202,7 @@ def trending_phrases_clustered(
         "one ui 8.5",
     }
 
-    BAD_LAST_TOKENS = {"tự", "tích", "ứng", "hợp", "bổ", "nhằm", "dụng"}
+    BAD_LAST_TOKENS = {"tự", "tích", "ứng", "hợp", "bổ", "nhằm", "dụng", "chính"}
 
     GENERIC_BAD = {
         "sử dụng",
@@ -285,10 +291,18 @@ def trending_phrases_clustered(
         cur = best.get(cid)
         # ưu tiên phrase "đúng lõi" cho cluster SIM (chứa sim/vneid)
         if cid == "sim_vneid":
-            core = ("sim" in term.lower()) or ("vneid" in term.lower())
+            t = term.lower()
+            core = ("sim" in t) and (("vneid" in t) or ("chính chủ" in t) or ("xác thực" in t))
             cur_core = (
                 cur is not None
-                and (("sim" in cur[0].lower()) or ("vneid" in cur[0].lower()))
+                and (
+                    ("sim" in cur[0].lower())
+                    and (
+                        ("vneid" in cur[0].lower())
+                        or ("chính chủ" in cur[0].lower())
+                        or ("xác thực" in cur[0].lower())
+                    )
+                )
             )
             if cur is None or (core and not cur_core) or ((dfi, si) > (cur[1], cur[2]) and (core == cur_core)):
                 best[cid] = (term, dfi, si)
@@ -461,9 +475,9 @@ def llm_executive_summary_min_tokens(
     hi = highlights[:max_highlights]
 
     system = (
-        "Bạn là trợ lý biên tập. Viết Executive Summary tiếng Việt, 4-5 đoạn ngắn, "
-        "tổng hợp xu hướng tuần về công nghệ dựa trên dữ liệu cung cấp. "
-        "Không bịa chi tiết, không nhắc link, không dùng bullet."
+        "Viết Executive Summary tiếng Việt, chỉ 1 đoạn (không xuống dòng), 4–6 câu đầy đủ."
+        "Không xuống dòng giữa câu. Không dùng bullet/đánh số. Kết thúc mỗi đoạn bằng dấu chấm."
+
     )
     user = (
         "Trending keywords:\n- "
@@ -560,7 +574,7 @@ def main() -> None:
     articles.sort(key=lambda a: a.get("published_at") or "", reverse=True)
 
     corpus = build_corpus(articles)
-    kw = trending_phrases_clustered(corpus, top_k=args.top_keywords)
+    kw = trending_phrases_clustered(build_title_corpus(articles), top_k=args.top_keywords)
 
     clusters = cluster_articles(corpus, articles, threshold=args.cluster_threshold)
     highlights: List[Tuple[str, str, List[str]]] = []

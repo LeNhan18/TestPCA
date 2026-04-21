@@ -6,18 +6,18 @@ Tuần qua, hệ thống thu thập được **131** bài thuộc chủ đề **
 
 Khoảng thời gian dữ liệu: từ **2026-04-14T16:50:42+00:00** đến **2026-04-21T14:28:00+00:00** (UTC).
 
-Các chủ đề nổi bật xoay quanh: **robot hình người, iphone pro, xác thực sim, galaxy s26, google maps, bảo mật, google photos, gemini tự động**.
+Các chủ đề nổi bật xoay quanh: **robot hình người, iphone pro, sim chính chủ, galaxy s27, google maps, chatbot gemini, google photos, microsoft defender**.
 
 ### Trending Keywords
 
 - **robot hình người**
 - **iphone pro**
-- **xác thực sim**
-- **galaxy s26**
+- **sim chính chủ**
+- **galaxy s27**
 - **google maps**
-- **bảo mật**
+- **chatbot gemini**
 - **google photos**
-- **gemini tự động**
+- **microsoft defender**
 
 ### Highlighted News
 

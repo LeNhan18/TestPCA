@@ -43,9 +43,9 @@ Script: `scripts/generate_weekly_report.py`
 - Corpus: `title + snippet` của từng bài
 - Tokenize tiếng Việt kiểu nhẹ (regex word)
 - Lọc stopwords tối thiểu để giảm nhiễu
-- Gộp từ khóa theo **chủ đề (topic-level)** để tránh trùng nghĩa:
-  - Ví dụ: "xác thực SIM" / "SIM chính chủ" / "thuê bao" / "VNeID" → **Xác thực SIM / VNeID**
-- Xếp hạng theo **độ phủ nhiều bài (document frequency)**, có TF-IDF hỗ trợ để giảm nhiễu từ 1 bài đơn lẻ
+- Trích xuất cụm từ **tự nhiên từ tiêu đề** (n-gram 2–6 từ) để giống headline
+- Ưu tiên cụm xuất hiện ở **nhiều bài** (document frequency), có TF-IDF hỗ trợ
+- Gộp biến thể để tránh trùng nghĩa (vd SIM/VNeID, Google Maps, Google Photos…)
 
 #### 3) Chọn Highlighted News (sự kiện nổi bật)
 
@@ -90,18 +90,18 @@ Tuần qua, hệ thống thu thập được **131** bài thuộc chủ đề **
 
 Khoảng thời gian dữ liệu: từ **2026-04-14T16:50:42+00:00** đến **2026-04-21T13:37:00+00:00** (UTC).
 
-Các chủ đề nổi bật xoay quanh: **robot hình người, iPhone Pro, xác thực SIM, Galaxy S26, Google Maps, bảo mật, Google Photos, Gemini tự động**.
+Các chủ đề nổi bật xoay quanh: **robot hình người, iPhone Pro, SIM chính chủ, Galaxy S27, Google Maps, chatbot Gemini, Google Photos, Microsoft Defender**.
 
 ### Trending Keywords
 
 - **robot hình người**
 - **iphone pro**
-- **xác thực sim**
-- **galaxy s26**
+- **sim chính chủ**
+- **galaxy s27**
 - **google maps**
-- **bảo mật**
+- **chatbot gemini**
 - **google photos**
-- **gemini tự động**
+- **microsoft defender**
 
 ### Highlighted News
 
