@@ -43,3 +43,17 @@ python scripts/generate_weekly_report.py --articles data/articles.jsonl
 
 Output mặc định:
 - `reports/weekly_tech_digest_YYYY-MM-DD.md`
+
+### (Tuỳ chọn) Dùng LLM để viết Executive Summary
+
+Mặc định Executive Summary được tạo theo cách deterministic. Nếu muốn LLM viết cho "mượt" hơn và vẫn tối ưu token:
+
+```bash
+# PowerShell
+$env:LLM_API_KEY="YOUR_KEY"
+# Tuỳ chọn:
+# $env:LLM_BASE_URL="https://api.openai.com"
+# $env:LLM_MODEL="gpt-4o-mini"
+
+python scripts/generate_weekly_report.py --articles data/articles.jsonl --llm_summary
+```

@@ -16,6 +16,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 from src.reporting.text_prep import basic_vi_tokenize, join_tokens, load_stopwords_vi
+from src.llm.openai_compat import chat_completions_min_tokens
 
 
 def parse_args() -> argparse.Namespace:
@@ -47,6 +48,11 @@ def parse_args() -> argparse.Namespace:
         type=float,
         default=0.62,
         help="Cosine similarity threshold for clustering (default: 0.62)",
+    )
+    p.add_argument(
+        "--llm_summary",
+        action="store_true",
+        help="Use LLM API to write Executive Summary (requires LLM_API_KEY).",
     )
     return p.parse_args()
 
@@ -439,6 +445,37 @@ def executive_summary(
     return "\n\n".join(lines)
 
 
+def llm_executive_summary_min_tokens(
+    *,
+    keywords: Sequence[Tuple[str, float]],
+    highlights: Sequence[Tuple[str, str, List[str]]],
+    max_highlights: int = 8,
+) -> str:
+    # Truncate để tiết kiệm token: chỉ gửi title + 1 câu mô tả ngắn
+    def short(s: str, n: int) -> str:
+        s = (s or "").strip()
+        return s if len(s) <= n else s[: n - 1] + "…"
+
+    kw = [k for (k, _) in keywords[:12]]
+    hi = highlights[:max_highlights]
+
+    system = (
+        "Bạn là trợ lý biên tập. Viết Executive Summary tiếng Việt, 4-5 đoạn ngắn, "
+        "tổng hợp xu hướng tuần về công nghệ dựa trên dữ liệu cung cấp. "
+        "Không bịa chi tiết, không nhắc link, không dùng bullet."
+    )
+    user = (
+        "Trending keywords:\n- "
+        + "\n- ".join(kw)
+        + "\n\nTop highlights (title — snippet):\n"
+        + "\n".join(
+            f"- {short(t, 90)} — {short(s, 180)}" for (t, s, _links) in hi
+        )
+    )
+
+    return chat_completions_min_tokens(system=system, user=user)
+
+
 def format_highlight(
     cluster: Cluster, articles: Sequence[Dict[str, Any]]
 ) -> Tuple[str, str, List[str]]:
@@ -472,6 +509,7 @@ def write_markdown_report(
     articles: Sequence[Dict[str, Any]],
     keywords: Sequence[Tuple[str, float]],
     highlights: Sequence[Tuple[str, str, List[str]]],
+    executive: str,
 ) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -480,8 +518,7 @@ def write_markdown_report(
     lines.append(f"## Weekly News Update — {topic} ({today})\n")
 
     lines.append("### Executive Summary\n")
-    # Executive summary dựa trên keywords + thống kê dataset
-    lines.append(executive_summary(articles, keywords, []))
+    lines.append(executive)
     lines.append("")
 
     lines.append("### Trending Keywords\n")
@@ -534,6 +571,16 @@ def main() -> None:
         if len(highlights) >= args.top_events:
             break
 
+    exec_text = executive_summary(articles, kw, [])
+    if args.llm_summary:
+        try:
+            exec_text = llm_executive_summary_min_tokens(
+                keywords=kw, highlights=highlights, max_highlights=8
+            )
+        except Exception as e:
+            # fallback to deterministic summary if LLM call fails
+            exec_text = exec_text + f"\n\n(Lưu ý: LLM summary thất bại: {e})"
+
     out_path = (
         Path(args.out)
         if args.out
@@ -545,6 +592,7 @@ def main() -> None:
         articles=articles,
         keywords=kw,
         highlights=highlights,
+        executive=exec_text,
     )
     print(f"Report generated: {out_path.as_posix()}")
 

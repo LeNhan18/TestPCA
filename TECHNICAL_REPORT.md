@@ -69,6 +69,10 @@ Script: `scripts/generate_weekly_report.py`
 Output:
 - `reports/weekly_tech_digest_YYYY-MM-DD.md`
 
+Tuỳ chọn (không bắt buộc):
+- Có thể bật `--llm_summary` để dùng LLM API viết Executive Summary.
+- Để tiết kiệm token, input gửi lên chỉ gồm: danh sách keyword + một số highlight top đã cắt ngắn, và có cache theo hash.
+
 ### Kết quả đạt được (Weekly Summary Report)
 
 File báo cáo tuần:
