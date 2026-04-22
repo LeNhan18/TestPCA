@@ -5,8 +5,8 @@ REM Optional: generate report using LLM for Executive Summary.
 REM Requires environment variables:
 REM - LLM_API_KEY
 REM Optional:
-REM - LLM_BASE_URL (default https://api.openai.com)
-REM - LLM_MODEL    (default gpt-4o-mini)
+REM - LLM_BASE_URL
+REM - LLM_MODEL
 
 pushd "%~dp0"
 

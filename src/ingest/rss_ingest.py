@@ -29,7 +29,7 @@ def normalize_url(url: str) -> str:
         return ""
 
     parts = urlsplit(url.strip())
-    parts = parts._replace(fragment="")  # drop #...
+    parts = parts._replace(fragment="")  # bỏ phần #fragment
 
     q = [
         (k, v)

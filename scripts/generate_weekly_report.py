@@ -99,6 +99,7 @@ VERY_STRONG_SINGLETONS = {
 
 
 def parse_args() -> argparse.Namespace:
+    # Note: keep CLI text ASCII-safe on Windows consoles.
     p = argparse.ArgumentParser(description="Generate weekly digest report (Markdown).")
     p.add_argument(
         "--articles",
@@ -168,10 +169,6 @@ def build_corpus(articles: Sequence[Dict[str, Any]]) -> List[str]:
 
 
 def build_title_corpus(articles: Sequence[Dict[str, Any]]) -> List[str]:
-    """
-    Corpus chỉ từ tiêu đề để keyword tự nhiên hơn (giống headline),
-    giảm nhiễu từ snippet dài.
-    """
     stop = load_stopwords_vi()
     corpus: List[str] = []
     for a in articles:
