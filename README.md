@@ -15,6 +15,30 @@ Mục tiêu (đúng yêu cầu bài test):
 - Python 3.10+ (khuyến nghị 3.11+)
 - Windows / macOS / Linux
 
+## Chạy nhanh 
+
+### Windows 
+
+Chạy trực tiếp:
+
+```bash
+run_pipeline.bat
+```
+
+Kết quả:
+- `data/articles.jsonl`
+- `reports/weekly_tech_digest_YYYY-MM-DD.md`
+
+### macOS/Linux (3 lệnh)
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python scripts/ingest_feeds.py --config config/feeds.json
+python scripts/generate_weekly_report.py --articles data/articles.jsonl --top_keywords 25 --top_events 20
+```
+
 ## Cài đặt
 
 ```bash
@@ -29,12 +53,6 @@ python -m pip install -r requirements.txt
 ```
 
 ## Chạy pipeline
-
-Nếu bạn dùng Windows và muốn chạy nhanh (khuyến nghị cho nhà tuyển dụng), chỉ cần:
-
-```bash
-run_pipeline.bat
-```
 
 ### 1) Ingest dữ liệu RSS → `data/articles.jsonl`
 
@@ -74,7 +92,7 @@ Mặc định Executive Summary được tạo theo cách deterministic để **
 PowerShell:
 
 ```bash
-$env:LLM_API_KEY=""
+$env:LLM_API_KEY="YOUR_KEY"
 $env:LLM_BASE_URL="https://api.groq.com/openai"
 $env:LLM_MODEL="llama-3.1-8b-instant"
 
