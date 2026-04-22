@@ -6,18 +6,18 @@ Tuần qua, hệ thống thu thập được **131** bài thuộc chủ đề **
 
 Khoảng thời gian dữ liệu: từ **2026-04-14T16:50:42+00:00** đến **2026-04-21T14:28:00+00:00** (UTC).
 
-Các chủ đề nổi bật xoay quanh: **Danh sách iPhone có thể không lên iOS 27, Xác thực SIM chính chủ, Xác thực SIM qua VNeID, Robot hình người nâng tạ 29 kg, Microsoft Defender bị khai thác qua lỗ hổng, Google Photos thêm công cụ chỉnh sửa khuôn mặt, Chatbot Gemini trên Chrome, Galaxy S26 Ultra lỗi màn hình sọc xanh**.
+Các chủ đề nổi bật xoay quanh: **robot hình người, iphone pro, sim chính chủ, galaxy s27, google maps, chatbot gemini, google photos, microsoft defender**.
 
 ### Trending Keywords
 
-- **Danh sách iPhone có thể không lên iOS 27**
-- **Xác thực SIM chính chủ**
-- **Xác thực SIM qua VNeID**
-- **Robot hình người nâng tạ 29 kg**
-- **Microsoft Defender bị khai thác qua lỗ hổng**
-- **Google Photos thêm công cụ chỉnh sửa khuôn mặt**
-- **Chatbot Gemini trên Chrome**
-- **Galaxy S26 Ultra lỗi màn hình sọc xanh**
+- **robot hình người**
+- **iphone pro**
+- **sim chính chủ**
+- **galaxy s27**
+- **google maps**
+- **chatbot gemini**
+- **google photos**
+- **microsoft defender**
 
 ### Highlighted News
 

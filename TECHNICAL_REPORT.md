@@ -40,13 +40,13 @@ Output:
 
 Script: `scripts/generate_weekly_report.py`
 
-- Mục tiêu: keyword phải giống **headline hoàn chỉnh** (vd “Xác thực SIM qua VNeID”, “Chatbot Gemini trên Chrome”)
-- Corpus: `title + snippet` (lowercase, unescape HTML) để bắt được ngữ cảnh đầy đủ
-- Trích xuất theo **pattern/canonical phrase** (rule-based) cho các trend công nghệ phổ biến trong tuần
-- Xếp hạng theo **độ phủ**:
-  - số bài match (document frequency)
-  - cộng điểm nếu xuất hiện ở nhiều nguồn (đa nguồn ưu tiên)
-- (Fallback sẵn có trong code) vẫn giữ TF-IDF n-gram để có thể dùng khi cần, nhưng mặc định ưu tiên canonical headline để tránh cụm bị cắt và lặp nghĩa
+- Corpus cho keyword: **title-only** để cụm từ gọn và ít nhiễu hơn snippet
+- Tokenize tiếng Việt kiểu nhẹ (regex word) + stopwords tối thiểu
+- Trích xuất cụm từ bằng **TF-IDF n-gram 2–6 từ**
+- Lọc rule để giảm nhiễu:
+  - loại cụm quá chung / cụm bị cắt
+  - yêu cầu “tín hiệu công nghệ” (Gemini/Chrome, iPhone/iOS, SIM/VNeID, Galaxy, Defender, Google Photos/Maps…)
+- Gộp biến thể (clustering theo canonical id) để tránh trùng nghĩa và ưu tiên cụm xuất hiện ở **nhiều bài** (document frequency)
 
 #### 3) Chọn Highlighted News (sự kiện nổi bật)
 
@@ -91,18 +91,19 @@ Tuần qua, hệ thống thu thập được **131** bài thuộc chủ đề **
 
 Khoảng thời gian dữ liệu: từ **2026-04-14T16:50:42+00:00** đến **2026-04-21T14:28:00+00:00** (UTC).
 
-Các chủ đề nổi bật xoay quanh: **Danh sách iPhone có thể không lên iOS 27, Xác thực SIM chính chủ, Xác thực SIM qua VNeID, Robot hình người nâng tạ 29 kg, Microsoft Defender bị khai thác qua lỗ hổng, Google Photos thêm công cụ chỉnh sửa khuôn mặt, Chatbot Gemini trên Chrome, Galaxy S26 Ultra lỗi màn hình sọc xanh**.
+Các chủ đề nổi bật xoay quanh: **robot hình người, iPhone Pro, SIM chính chủ, Galaxy S27, Google Maps, chatbot Gemini, Google Photos, Microsoft Defender**.
 
 ### Trending Keywords
 
-- **Danh sách iPhone có thể không lên iOS 27**
-- **Xác thực SIM chính chủ**
-- **Xác thực SIM qua VNeID**
-- **Robot hình người nâng tạ 29 kg**
-- **Microsoft Defender bị khai thác qua lỗ hổng**
-- **Google Photos thêm công cụ chỉnh sửa khuôn mặt**
-- **Chatbot Gemini trên Chrome**
-- **Galaxy S26 Ultra lỗi màn hình sọc xanh**
+- **robot hình người**
+- **iphone pro**
+- **sim chính chủ**
+- **galaxy s27**
+- **google maps**
+- **chatbot gemini**
+- **google photos**
+- **microsoft defender**
+
 
 ### Highlighted News
 

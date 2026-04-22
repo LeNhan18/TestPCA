@@ -97,18 +97,6 @@ VERY_STRONG_SINGLETONS = {
     "one ui 8.5",
 }
 
-CANONICAL_KEYPHRASE_RULES = [
-    # (canonical, required_substrings)
-    ("Xác thực SIM qua VNeID", ["xác thực", "sim", "vneid"]),
-    ("Xác thực SIM chính chủ", ["sim", "chính chủ"]),
-    ("Chatbot Gemini trên Chrome", ["gemini", "chrome"]),
-    ("Microsoft Defender bị khai thác qua lỗ hổng", ["microsoft", "defender", "lỗ hổng"]),
-    ("Robot hình người nâng tạ 29 kg", ["robot", "hình người", "29"]),
-    ("Google Photos thêm công cụ chỉnh sửa khuôn mặt", ["google photos", "khuôn mặt"]),
-    ("Danh sách iPhone có thể không lên iOS 27", ["iphone", "ios 27"]),
-    ("Galaxy S26 Ultra lỗi màn hình sọc xanh", ["galaxy", "s26", "sọc xanh"]),
-]
-
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Generate weekly digest report (Markdown).")
@@ -195,48 +183,6 @@ def build_title_corpus(articles: Sequence[Dict[str, Any]]) -> List[str]:
 
 def _contains_any(haystack: str, needles: Sequence[str]) -> bool:
     return any(n in haystack for n in needles)
-
-
-def extract_headline_keywords(
-    articles: Sequence[Dict[str, Any]],
-    *,
-    top_k: int,
-) -> List[Tuple[str, float]]:
-    """
-    Trích xuất trending keywords dạng headline/cụm hoàn chỉnh.
-
-    - Dò theo pattern trên title + snippet (đã lower)
-    - Canonicalize về phrase chuẩn
-    - Rank theo độ phủ: số bài + số nguồn (đa nguồn ưu tiên)
-    """
-    if not articles:
-        return []
-
-    def norm_text(a: Dict[str, Any]) -> str:
-        title = html.unescape((a.get("title") or "").strip())
-        snippet = html.unescape((a.get("snippet") or "").strip())
-        return f"{title}\n{snippet}".lower()
-
-    hits: Dict[str, Dict[str, Any]] = {}
-    for a in articles:
-        t = norm_text(a)
-        src = (a.get("source") or "").strip()
-        for canonical, req in CANONICAL_KEYPHRASE_RULES:
-            if all(r in t for r in req):
-                h = hits.setdefault(canonical, {"df": 0, "sources": set()})
-                h["df"] += 1
-                if src:
-                    h["sources"].add(src)
-
-    ranked: List[Tuple[str, float]] = []
-    for canonical, meta in hits.items():
-        df = int(meta["df"])
-        n_sources = len(meta["sources"])
-        score = df + 0.6 * n_sources
-        ranked.append((canonical, score))
-
-    ranked.sort(key=lambda x: x[1], reverse=True)
-    return ranked[:top_k]
 
 
 def trending_phrases_clustered(
@@ -599,7 +545,7 @@ def main() -> None:
     articles.sort(key=lambda a: a.get("published_at") or "", reverse=True)
 
     corpus = build_corpus(articles)
-    kw = extract_headline_keywords(articles, top_k=args.top_keywords)
+    kw = trending_phrases_clustered(build_title_corpus(articles), top_k=args.top_keywords)
 
     clusters = cluster_articles(corpus, articles, threshold=args.cluster_threshold)
     highlights: List[Tuple[str, str, List[str]]] = []
