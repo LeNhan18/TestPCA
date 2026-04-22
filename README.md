@@ -1,18 +1,42 @@
-## Weekly Tech News Assistant 
+## Weekly Tech News Assistant
 
-Pipeline ngày 1: **tải RSS** (VnExpress/Thanh Niên/Tuổi Trẻ) → **làm sạch snippet** (strip HTML) → **lọc 7 ngày** → **khử trùng lặp theo URL** → xuất `JSONL`.
+Trợ lý tổng hợp tin **Công nghệ** theo tuần từ RSS của:
+- VnExpress (`so-hoa`)
+- Thanh Niên (`cong-nghe`)
+- Tuổi Trẻ (`cong-nghe`)
 
-### Cài đặt
+Mục tiêu (đúng yêu cầu bài test):
+- **Executive Summary**: bối cảnh chung + xu hướng + diễn biến đáng chú ý
+- **Trending Keywords**: danh sách từ khóa/cụm từ nổi bật trong tuần
+- **Highlighted News**: các sự kiện quan trọng, có tóm tắt ngắn và link nguồn
+
+## Yêu cầu
+
+- Python 3.10+ (khuyến nghị 3.11+)
+- Windows / macOS / Linux
+
+## Cài đặt
 
 ```bash
 python -m venv .venv
-# PowerShell
-.\.venv\Scripts\Activate.ps1
+```
 
+PowerShell:
+
+```bash
+.\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 ```
 
-### Chạy ingest
+## Chạy pipeline
+
+Nếu bạn dùng Windows và muốn chạy nhanh (khuyến nghị cho nhà tuyển dụng), chỉ cần:
+
+```bash
+run_pipeline.bat
+```
+
+### 1) Ingest dữ liệu RSS → `data/articles.jsonl`
 
 ```bash
 python scripts/ingest_feeds.py --config config/feeds.json
@@ -24,18 +48,11 @@ Tuỳ chọn:
 python scripts/ingest_feeds.py --config config/feeds.json --days 7 --out data/articles.jsonl
 ```
 
-### Output
+Output:
+- `data/articles.jsonl` (1 dòng = 1 bài)
+- Trường chính: `source`, `feed_url`, `title`, `url`, `published_at` (ISO/UTC), `snippet`
 
-- `data/articles.jsonl` (1 dòng = 1 JSON record)
-- Schema mỗi record:
-  - `source`, `feed_url`, `title`, `url`, `published_at` (ISO/UTC), `snippet`
-
-## Báo cáo tuần (đúng yêu cầu bài test)
-
-Sau khi đã có `data/articles.jsonl`, chạy script sau để sinh báo cáo tuần gồm:
-- Executive Summary
-- Trending Keywords
-- Highlighted News (kèm link nguồn)
+### 2) Sinh báo cáo tuần → `reports/*.md`
 
 ```bash
 python scripts/generate_weekly_report.py --articles data/articles.jsonl
@@ -44,16 +61,47 @@ python scripts/generate_weekly_report.py --articles data/articles.jsonl
 Output mặc định:
 - `reports/weekly_tech_digest_YYYY-MM-DD.md`
 
-### (Tuỳ chọn) Dùng LLM để viết Executive Summary
-
-Mặc định Executive Summary được tạo theo cách deterministic. Nếu muốn LLM viết cho "mượt" hơn và vẫn tối ưu token:
+Tuỳ chọn (điều chỉnh số lượng):
 
 ```bash
-# PowerShell
-$env:LLM_API_KEY="YOUR_KEY"
-# Tuỳ chọn:
-# $env:LLM_BASE_URL="https://api.openai.com"
-# $env:LLM_MODEL="gpt-4o-mini"
+python scripts/generate_weekly_report.py --articles data/articles.jsonl --top_keywords 25 --top_events 20
+```
+
+## (Tuỳ chọn) Dùng LLM để viết Executive Summary
+
+Mặc định Executive Summary được tạo theo cách deterministic để **chạy được ngay khi clone repo**. Nếu muốn LLM viết “mượt” hơn, bật `--llm_summary` và cấu hình qua biến môi trường (không hardcode key).
+
+PowerShell:
+
+```bash
+$env:LLM_API_KEY=""
+$env:LLM_BASE_URL="https://api.groq.com/openai"
+$env:LLM_MODEL="llama-3.1-8b-instant"
 
 python scripts/generate_weekly_report.py --articles data/articles.jsonl --llm_summary
 ```
+
+Hoặc (Windows) chạy file:
+
+```bash
+run_llm_summary.bat
+```
+
+Ghi chú:
+- Nếu thiếu `LLM_API_KEY` mà bật `--llm_summary`, chương trình sẽ tự fallback sang bản deterministic và ghi chú lỗi trong báo cáo.
+- Kết quả LLM có cache ở `.cache/llm/` để tránh gọi lại tốn token khi chạy nhiều lần.
+
+## Cấu trúc thư mục
+
+- `config/feeds.json`: danh sách RSS + tham số mặc định
+- `scripts/ingest_feeds.py`: ingest RSS, lọc 7 ngày, dedupe URL
+- `scripts/generate_weekly_report.py`: trending keywords, clustering highlights, sinh Markdown report
+- `src/ingest/`: logic ingest RSS
+- `src/reporting/`: tiền xử lý text tiếng Việt
+- `src/llm/`: gọi API OpenAI-compatible (tuỳ chọn)
+- `reports/`: báo cáo Markdown đã sinh
+
+## Troubleshooting (Windows)
+
+- Nếu PowerShell chặn activate venv, chạy:
+  - `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`
