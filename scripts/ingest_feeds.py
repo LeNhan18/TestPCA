@@ -10,7 +10,7 @@ from src.ingest.rss_ingest import collect_articles, load_feeds_config
 
 
 def parse_args() -> argparse.Namespace:
-    # Luu y: Windows console co the loi encoding voi tieng Viet co dau trong --help.
+    #  Luu y: Windows console co the loi encoding voi tieng Viet co dau trong --help.
     p = argparse.ArgumentParser(description="Ingest RSS feeds and write JSONL.")
     p.add_argument(
         "--config",
