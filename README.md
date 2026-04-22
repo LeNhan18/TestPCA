@@ -5,7 +5,7 @@ An assistant that collects and summarizes **weekly Technology news** from Vietna
 - Thanh Nien (`cong-nghe`)
 - Tuoi Tre (`cong-nghe`)
 
-Deliverables (per the test requirements):
+Deliverables:
 - **Executive Summary**: overall landscape + key trends + notable developments
 - **Trending Keywords**: a list of important keywords/topics
 - **Highlighted News**: key events with short summaries and source links
@@ -15,7 +15,7 @@ Deliverables (per the test requirements):
 - Python 3.10+ (3.11+ recommended)
 - Windows / macOS / Linux
 
-## Quickstart (recommended for recruiters)
+## Quickstart 
 
 ### Windows (one command)
 

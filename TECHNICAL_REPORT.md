@@ -19,7 +19,7 @@ RSS list (configured in `config/feeds.json`):
 
 ### Implementation workflow
 
-#### 1) Ingest & normalization (Day 1)
+#### 1) Ingest & normalization
 
 Script: `scripts/ingest_feeds.py`
 
