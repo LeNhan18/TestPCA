@@ -40,12 +40,13 @@ Output:
 
 Script: `scripts/generate_weekly_report.py`
 
-- Corpus: `title + snippet` của từng bài
-- Tokenize tiếng Việt kiểu nhẹ (regex word)
-- Lọc stopwords tối thiểu để giảm nhiễu
-- Trích xuất cụm từ **tự nhiên từ tiêu đề** (n-gram 2–6 từ) để giống headline
-- Ưu tiên cụm xuất hiện ở **nhiều bài** (document frequency), có TF-IDF hỗ trợ
-- Gộp biến thể để tránh trùng nghĩa (vd SIM/VNeID, Google Maps, Google Photos…)
+- Mục tiêu: keyword phải giống **headline hoàn chỉnh** (vd “Xác thực SIM qua VNeID”, “Chatbot Gemini trên Chrome”)
+- Corpus: `title + snippet` (lowercase, unescape HTML) để bắt được ngữ cảnh đầy đủ
+- Trích xuất theo **pattern/canonical phrase** (rule-based) cho các trend công nghệ phổ biến trong tuần
+- Xếp hạng theo **độ phủ**:
+  - số bài match (document frequency)
+  - cộng điểm nếu xuất hiện ở nhiều nguồn (đa nguồn ưu tiên)
+- (Fallback sẵn có trong code) vẫn giữ TF-IDF n-gram để có thể dùng khi cần, nhưng mặc định ưu tiên canonical headline để tránh cụm bị cắt và lặp nghĩa
 
 #### 3) Chọn Highlighted News (sự kiện nổi bật)
 
@@ -76,32 +77,32 @@ Tuỳ chọn (không bắt buộc):
 ### Kết quả đạt được (Weekly Summary Report)
 
 File báo cáo tuần:
-- `reports/weekly_tech_digest_2026-04-21.md`
+- `reports/weekly_tech_digest_2026-04-22.md`
 
 Nội dung:
 
 ---
 
-## Weekly News Update — Technology (2026-04-21)
+## Weekly News Update — Technology (2026-04-22)
 
 ### Executive Summary
 
 Tuần qua, hệ thống thu thập được **131** bài thuộc chủ đề **Công nghệ** từ các nguồn **thanhnien** (50), **vnexpress** (60), **tuoitre** (21).
 
-Khoảng thời gian dữ liệu: từ **2026-04-14T16:50:42+00:00** đến **2026-04-21T13:37:00+00:00** (UTC).
+Khoảng thời gian dữ liệu: từ **2026-04-14T16:50:42+00:00** đến **2026-04-21T14:28:00+00:00** (UTC).
 
-Các chủ đề nổi bật xoay quanh: **robot hình người, iPhone Pro, SIM chính chủ, Galaxy S27, Google Maps, chatbot Gemini, Google Photos, Microsoft Defender**.
+Các chủ đề nổi bật xoay quanh: **Danh sách iPhone có thể không lên iOS 27, Xác thực SIM chính chủ, Xác thực SIM qua VNeID, Robot hình người nâng tạ 29 kg, Microsoft Defender bị khai thác qua lỗ hổng, Google Photos thêm công cụ chỉnh sửa khuôn mặt, Chatbot Gemini trên Chrome, Galaxy S26 Ultra lỗi màn hình sọc xanh**.
 
 ### Trending Keywords
 
-- **robot hình người**
-- **iphone pro**
-- **sim chính chủ**
-- **galaxy s27**
-- **google maps**
-- **chatbot gemini**
-- **google photos**
-- **microsoft defender**
+- **Danh sách iPhone có thể không lên iOS 27**
+- **Xác thực SIM chính chủ**
+- **Xác thực SIM qua VNeID**
+- **Robot hình người nâng tạ 29 kg**
+- **Microsoft Defender bị khai thác qua lỗ hổng**
+- **Google Photos thêm công cụ chỉnh sửa khuôn mặt**
+- **Chatbot Gemini trên Chrome**
+- **Galaxy S26 Ultra lỗi màn hình sọc xanh**
 
 ### Highlighted News
 
