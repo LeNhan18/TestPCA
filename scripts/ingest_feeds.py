@@ -10,6 +10,7 @@ from src.ingest.rss_ingest import collect_articles, load_feeds_config
 
 
 def parse_args() -> argparse.Namespace:
+    # Luu y: Windows console co the loi encoding voi tieng Viet co dau trong --help.
     p = argparse.ArgumentParser(description="Ingest RSS feeds and write JSONL.")
     p.add_argument(
         "--config",
@@ -61,7 +62,7 @@ def main() -> None:
 
     print(f"Saved: {len(results)} articles -> {out.as_posix()}")
     print("By source:", by_source)
-    print("Published range:", {"min": min_dt, "max": max_dt})
+    print("Published range (UTC):", {"min": min_dt, "max": max_dt})
 
     if errors:
         print(f"Feed errors: {len(errors)}")

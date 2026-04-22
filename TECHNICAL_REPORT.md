@@ -1,85 +1,85 @@
 ## Technical Report — Weekly Technology News Update
 
-### Mục tiêu
+### Objective
 
-Xây dựng một "Intelligent Assistant" có khả năng:
-- Thu thập dữ liệu tin tức từ báo điện tử (VnExpress, Thanh Niên, Tuổi Trẻ)
-- Lọc theo chủ đề **Technology** trong **7 ngày gần nhất**
-- Tạo báo cáo tuần gồm:
+Build an "Intelligent Assistant" that:
+- Collects news articles from Vietnamese electronic newspapers (VnExpress, Thanh Nien, Tuoi Tre)
+- Filters the **Technology** topic within the **last 7 days**
+- Produces a weekly report with:
   - Executive Summary
   - Trending Keywords
-  - Highlighted News (kèm link nguồn)
+  - Highlighted News (with source links)
 
-### Nguồn dữ liệu
+### Data sources
 
-Danh sách RSS (cấu hình tại `config/feeds.json`):
+RSS list (configured in `config/feeds.json`):
 - VnExpress: `https://vnexpress.net/rss/so-hoa.rss`
-- Thanh Niên: `https://thanhnien.vn/rss/cong-nghe.rss`
-- Tuổi Trẻ: `https://tuoitre.vn/rss/cong-nghe.rss`
+- Thanh Nien: `https://thanhnien.vn/rss/cong-nghe.rss`
+- Tuoi Tre: `https://tuoitre.vn/rss/cong-nghe.rss`
 
-### Workflow triển khai
+### Implementation workflow
 
-#### 1) Ingest & chuẩn hóa (Ngày 1)
+#### 1) Ingest & normalization (Day 1)
 
 Script: `scripts/ingest_feeds.py`
 
-- Tải RSS bằng `requests`
-- Parse RSS bằng `feedparser`
-- Làm sạch mô tả:
-  - `snippet` lấy từ `summary/description`
-  - strip HTML bằng `beautifulsoup4`
-- Chuẩn hóa thời gian:
-  - parse datetime bằng `python-dateutil`
-  - quy về UTC để lọc cửa sổ 7 ngày
-- Dedupe theo URL (bỏ `#fragment`, loại `utm_*`)
+- Fetch RSS via `requests`
+- Parse feeds via `feedparser`
+- Clean descriptions:
+  - `snippet` is taken from `summary/description`
+  - strip HTML using `beautifulsoup4`
+- Normalize timestamps:
+  - parse datetime using `python-dateutil`
+  - convert to UTC for a consistent 7-day window filter
+- Deduplicate by normalized URL (drop `#fragment`, remove `utm_*`)
 
 Output:
-- `data/articles.jsonl` (1 dòng = 1 bài)
+- `data/articles.jsonl` (1 line = 1 article)
 
-#### 2) Tính Trending Keywords
-
-Script: `scripts/generate_weekly_report.py`
-
-- Corpus cho keyword: **title-only** để cụm từ gọn và ít nhiễu hơn snippet
-- Tokenize tiếng Việt kiểu nhẹ (regex word) + stopwords tối thiểu
-- Trích xuất cụm từ bằng **TF-IDF n-gram 2–6 từ**
-- Lọc rule để giảm nhiễu:
-  - loại cụm quá chung / cụm bị cắt
-  - yêu cầu “tín hiệu công nghệ” (Gemini/Chrome, iPhone/iOS, SIM/VNeID, Galaxy, Defender, Google Photos/Maps…)
-- Gộp biến thể (clustering theo canonical id) để tránh trùng nghĩa và ưu tiên cụm xuất hiện ở **nhiều bài** (document frequency)
-
-#### 3) Chọn Highlighted News (sự kiện nổi bật)
+#### 2) Trending Keywords
 
 Script: `scripts/generate_weekly_report.py`
 
-- Vector hóa (TF-IDF) toàn tập bài trong tuần
-- Tính cosine similarity
-- Gom cụm theo ngưỡng similarity (greedy clustering)
-- Chấm điểm cụm:
-  - ưu tiên cụm có nhiều bài hơn
-  - cộng điểm nếu cụm có nhiều nguồn khác nhau
-- Lấy top \(N\) cụm làm Highlighted News
-- Mỗi mục:
-  - tiêu đề đại diện = bài mới nhất trong cụm
-  - tóm tắt ngắn = snippet bài đại diện
-  - kèm 1–3 link nguồn
- - Nhóm hiển thị theo chủ đề (rule-based): AI / Apple & thiết bị / An ninh mạng / Chuyển đổi số / Khác
+- Keyword corpus: **title-only** to keep phrases concise and reduce snippet noise
+- Lightweight Vietnamese tokenization (regex) + minimal stopwords
+- Extract candidate phrases with **TF-IDF n-grams (2–6 words)**
+- Rule-based filtering to reduce noise:
+  - remove overly generic / truncated phrases
+  - require strong tech signals (Gemini/Chrome, iPhone/iOS, SIM/VNeID, Galaxy, Defender, Google Photos/Maps, etc.)
+- Cluster/merge variants (canonical cluster IDs) to avoid duplicates and prioritize phrases that appear in **multiple articles** (document frequency)
 
-#### 4) Sinh Weekly Summary Report
+#### 3) Highlighted News (key events)
+
+Script: `scripts/generate_weekly_report.py`
+
+- Vectorize weekly articles using TF-IDF
+- Compute cosine similarity
+- Greedy clustering with a similarity threshold
+- Cluster scoring:
+  - prefer clusters with more articles
+  - add bonus for clusters covered by multiple sources
+- Select top \(N\) clusters as highlighted events
+- For each highlighted event:
+  - representative title = newest article in the cluster
+  - short summary = representative RSS snippet
+  - include 1–3 source URLs
+- Display grouping (rule-based): AI / Apple & Devices / Cybersecurity / Digital Transformation & eID / Other
+
+#### 4) Weekly report generation
 
 Output:
 - `reports/weekly_tech_digest_YYYY-MM-DD.md`
 
-Tuỳ chọn (không bắt buộc):
-- Có thể bật `--llm_summary` để dùng LLM API viết Executive Summary.
-- Để tiết kiệm token, input gửi lên chỉ gồm: danh sách keyword + một số highlight top đã cắt ngắn, và có cache theo hash.
+Optional (not required):
+- Enable `--llm_summary` to have an OpenAI-compatible LLM generate the Executive Summary.
+- For token efficiency, only a compact set of keywords + truncated top highlights is sent, with hash-based caching.
 
-### Kết quả đạt được (Weekly Summary Report)
+### Achieved results (Weekly Summary Report)
 
-File báo cáo tuần:
+Weekly report file:
 - `reports/weekly_tech_digest_2026-04-22.md`
 
-Nội dung:
+Excerpt:
 
 ---
 
