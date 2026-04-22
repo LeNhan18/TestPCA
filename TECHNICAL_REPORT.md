@@ -40,12 +40,13 @@ Output:
 
 Script: `scripts/generate_weekly_report.py`
 
-- Corpus: `title + snippet` của từng bài
-- Tokenize tiếng Việt kiểu nhẹ (regex word)
-- Lọc stopwords tối thiểu để giảm nhiễu
-- Trích xuất cụm từ **tự nhiên từ tiêu đề** (n-gram 2–6 từ) để giống headline
-- Ưu tiên cụm xuất hiện ở **nhiều bài** (document frequency), có TF-IDF hỗ trợ
-- Gộp biến thể để tránh trùng nghĩa (vd SIM/VNeID, Google Maps, Google Photos…)
+- Corpus cho keyword: **title-only** để cụm từ gọn và ít nhiễu hơn snippet
+- Tokenize tiếng Việt kiểu nhẹ (regex word) + stopwords tối thiểu
+- Trích xuất cụm từ bằng **TF-IDF n-gram 2–6 từ**
+- Lọc rule để giảm nhiễu:
+  - loại cụm quá chung / cụm bị cắt
+  - yêu cầu “tín hiệu công nghệ” (Gemini/Chrome, iPhone/iOS, SIM/VNeID, Galaxy, Defender, Google Photos/Maps…)
+- Gộp biến thể (clustering theo canonical id) để tránh trùng nghĩa và ưu tiên cụm xuất hiện ở **nhiều bài** (document frequency)
 
 #### 3) Chọn Highlighted News (sự kiện nổi bật)
 
@@ -76,19 +77,19 @@ Tuỳ chọn (không bắt buộc):
 ### Kết quả đạt được (Weekly Summary Report)
 
 File báo cáo tuần:
-- `reports/weekly_tech_digest_2026-04-21.md`
+- `reports/weekly_tech_digest_2026-04-22.md`
 
 Nội dung:
 
 ---
 
-## Weekly News Update — Technology (2026-04-21)
+## Weekly News Update — Technology (2026-04-22)
 
 ### Executive Summary
 
 Tuần qua, hệ thống thu thập được **131** bài thuộc chủ đề **Công nghệ** từ các nguồn **thanhnien** (50), **vnexpress** (60), **tuoitre** (21).
 
-Khoảng thời gian dữ liệu: từ **2026-04-14T16:50:42+00:00** đến **2026-04-21T13:37:00+00:00** (UTC).
+Khoảng thời gian dữ liệu: từ **2026-04-14T16:50:42+00:00** đến **2026-04-21T14:28:00+00:00** (UTC).
 
 Các chủ đề nổi bật xoay quanh: **robot hình người, iPhone Pro, SIM chính chủ, Galaxy S27, Google Maps, chatbot Gemini, Google Photos, Microsoft Defender**.
 
@@ -102,6 +103,7 @@ Các chủ đề nổi bật xoay quanh: **robot hình người, iPhone Pro, SIM
 - **chatbot gemini**
 - **google photos**
 - **microsoft defender**
+
 
 ### Highlighted News
 
